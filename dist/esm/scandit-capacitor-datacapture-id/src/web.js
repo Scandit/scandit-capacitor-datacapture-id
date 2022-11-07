@@ -1,17 +1,12 @@
-import { WebPlugin, registerWebPlugin } from '@capacitor/core';
+import { registerPlugin } from '@capacitor/core';
 import { getDefaults } from './ts/Capacitor/Capacitor';
 import { AAMVABarcodeResult, AamvaVizBarcodeComparisonResult, AamvaVizBarcodeComparisonVerifier, CapturedId, RejectedId, LocalizedOnlyId, DateResult, MRZResult, USUniformedServicesBarcodeResult, VIZResult, ArgentinaIdBarcodeResult, ColombiaIdBarcodeResult, SouthAfricaDlBarcodeResult, SouthAfricaIdBarcodeResult, } from './ts/CapturedId';
 import { CapturedResultType, DocumentType, IdImageType, IdDocumentType, SupportedSides, IdLayoutStyle, IdLayoutLineStyle, IdLayout, ComparisonCheckResult, } from './ts/Enums';
 import { IdCapture, } from './ts/IdCapture';
 import { IdCaptureOverlay, IdCaptureSession, } from './ts/IdCapture+Related';
 import { IdCaptureSettings, } from './ts/IdCaptureSettings';
-export class ScanditIdPlugin extends WebPlugin {
-    constructor() {
-        super({
-            name: 'ScanditIdPlugin',
-            platforms: ['android', 'ios'],
-        });
-    }
+export * from './definitions';
+export class ScanditIdPluginImplementation {
     async initialize() {
         const api = {
             IdCapture,
@@ -47,7 +42,10 @@ export class ScanditIdPlugin extends WebPlugin {
         }, reject));
     }
 }
-const scanditId = new ScanditIdPlugin();
-export { scanditId };
-registerWebPlugin(scanditId);
+registerPlugin('ScanditIdPlugin', {
+    android: () => new ScanditIdPluginImplementation(),
+    ios: () => new ScanditIdPluginImplementation(),
+});
+// tslint:disable-next-line:variable-name
+export const ScanditIdPlugin = new ScanditIdPluginImplementation();
 //# sourceMappingURL=web.js.map

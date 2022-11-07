@@ -1983,13 +1983,7 @@ class IdCaptureSettings extends DefaultSerializeable {
     }
 }
 
-class ScanditIdPlugin extends core.WebPlugin {
-    constructor() {
-        super({
-            name: 'ScanditIdPlugin',
-            platforms: ['android', 'ios'],
-        });
-    }
+class ScanditIdPluginImplementation {
     async initialize() {
         const api = {
             IdCapture,
@@ -2025,9 +2019,13 @@ class ScanditIdPlugin extends core.WebPlugin {
         }, reject));
     }
 }
-const scanditId = new ScanditIdPlugin();
-core.registerWebPlugin(scanditId);
+core.registerPlugin('ScanditIdPlugin', {
+    android: () => new ScanditIdPluginImplementation(),
+    ios: () => new ScanditIdPluginImplementation(),
+});
+// tslint:disable-next-line:variable-name
+const ScanditIdPlugin = new ScanditIdPluginImplementation();
 
 exports.ScanditIdPlugin = ScanditIdPlugin;
-exports.scanditId = scanditId;
+exports.ScanditIdPluginImplementation = ScanditIdPluginImplementation;
 //# sourceMappingURL=plugin.cjs.js.map

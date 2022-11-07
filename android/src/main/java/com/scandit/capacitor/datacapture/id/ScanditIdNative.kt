@@ -11,6 +11,7 @@ import com.getcapacitor.JSObject
 import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
+import com.getcapacitor.annotation.CapacitorPlugin
 import com.scandit.capacitor.datacapture.core.ScanditCaptureCoreNative
 import com.scandit.capacitor.datacapture.core.communication.ModeDeserializersProvider
 import com.scandit.capacitor.datacapture.core.data.SerializableCallbackAction.Companion.FIELD_FINISH_CALLBACK_ID
@@ -38,10 +39,10 @@ import com.scandit.datacapture.id.verification.aamvavizbarcode.AamvaVizBarcodeCo
 import org.json.JSONException
 import org.json.JSONObject
 
-@com.getcapacitor.annotation.CapacitorPlugin(name = "ScanditIdNative")
+@CapacitorPlugin(name = "ScanditIdNative")
 class ScanditIdNative :
     Plugin(),
-    CapacitorPlugin,
+    com.scandit.capacitor.datacapture.id.CapacitorPlugin,
     ModeDeserializersProvider,
     IdCaptureDeserializerListener,
     IdCaptureListener {
