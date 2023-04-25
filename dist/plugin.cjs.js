@@ -38,7 +38,7 @@ const capacitorExec = (successCallback, errorCallback, pluginName, functionName,
                 // tslint:disable-next-line:no-console
                 console.log(`[SCANDIT WARNING] Took ${callbackDuration}ms to execute callback that's blocking native execution. You should keep this duration short, for more information, take a look at the documentation.`);
             }
-            core.Plugins[pluginName].finishCallback([{
+            window.Capacitor.Plugins[pluginName].finishCallback([{
                     finishCallbackID,
                     result: callbackResult,
                 }]);
@@ -53,7 +53,7 @@ const capacitorExec = (successCallback, errorCallback, pluginName, functionName,
             errorCallback(error);
         }
     };
-    core.Plugins[pluginName][functionName](args).then(extendedSuccessCallback, extendedErrorCallback);
+    window.Capacitor.Plugins[pluginName][functionName](args).then(extendedSuccessCallback, extendedErrorCallback);
 };
 
 // tslint:disable-next-line:ban-types
@@ -577,38 +577,6 @@ var Direction;
     Direction["BottomToTop"] = "bottomToTop";
 })(Direction || (Direction = {}));
 
-class PrivateFocusGestureDeserializer {
-    static fromJSON(json) {
-        if (json && json.type === new TapToFocus().type) {
-            return new TapToFocus();
-        }
-        else {
-            return null;
-        }
-    }
-}
-class TapToFocus extends DefaultSerializeable {
-    constructor() {
-        super();
-        this.type = 'tapToFocus';
-    }
-}
-class PrivateZoomGestureDeserializer {
-    static fromJSON(json) {
-        if (json && json.type === new SwipeToZoom().type) {
-            return new SwipeToZoom();
-        }
-        else {
-            return null;
-        }
-    }
-}
-class SwipeToZoom extends DefaultSerializeable {
-    constructor() {
-        super();
-        this.type = 'swipeToZoom';
-    }
-}
 var LogoStyle;
 (function (LogoStyle) {
     LogoStyle["Minimal"] = "minimal";
@@ -657,81 +625,6 @@ __decorate$4([
     nameForSerialization('isLooping')
 ], RectangularViewfinderAnimation.prototype, "_isLooping", void 0);
 
-const defaultsFromJSON$1 = (json) => {
-    return {
-        Camera: {
-            Settings: {
-                preferredResolution: json.Camera.Settings.preferredResolution,
-                zoomFactor: json.Camera.Settings.zoomFactor,
-                focusRange: json.Camera.Settings.focusRange,
-                zoomGestureZoomFactor: json.Camera.Settings.zoomGestureZoomFactor,
-                focusGestureStrategy: json.Camera.Settings.focusGestureStrategy,
-                shouldPreferSmoothAutoFocus: json.Camera.Settings.shouldPreferSmoothAutoFocus,
-            },
-            defaultPosition: (json.Camera.defaultPosition || null),
-            availablePositions: json.Camera.availablePositions,
-        },
-        DataCaptureView: {
-            scanAreaMargins: MarginsWithUnit
-                .fromJSON(JSON.parse(json.DataCaptureView.scanAreaMargins)),
-            pointOfInterest: PointWithUnit
-                .fromJSON(JSON.parse(json.DataCaptureView.pointOfInterest)),
-            logoAnchor: json.DataCaptureView.logoAnchor,
-            logoOffset: PointWithUnit
-                .fromJSON(JSON.parse(json.DataCaptureView.logoOffset)),
-            focusGesture: PrivateFocusGestureDeserializer.fromJSON(JSON.parse(json.DataCaptureView.focusGesture)),
-            zoomGesture: PrivateZoomGestureDeserializer.fromJSON(JSON.parse(json.DataCaptureView.zoomGesture)),
-            logoStyle: json.DataCaptureView.logoStyle.toLowerCase(),
-        },
-        LaserlineViewfinder: Object
-            .keys(json.LaserlineViewfinder.styles)
-            .reduce((acc, key) => {
-            const viewfinder = json.LaserlineViewfinder.styles[key];
-            acc.styles[key] = {
-                width: NumberWithUnit
-                    .fromJSON(JSON.parse(viewfinder.width)),
-                enabledColor: Color
-                    .fromJSON(viewfinder.enabledColor),
-                disabledColor: Color
-                    .fromJSON(viewfinder.disabledColor),
-                style: viewfinder.style,
-            };
-            return acc;
-        }, { defaultStyle: json.LaserlineViewfinder.defaultStyle, styles: {} }),
-        RectangularViewfinder: Object
-            .keys(json.RectangularViewfinder.styles)
-            .reduce((acc, key) => {
-            const viewfinder = json.RectangularViewfinder.styles[key];
-            acc.styles[key] = {
-                size: SizeWithUnitAndAspect
-                    .fromJSON(JSON.parse(viewfinder.size)),
-                color: Color
-                    .fromJSON(viewfinder.color),
-                style: viewfinder.style,
-                lineStyle: viewfinder.lineStyle,
-                dimming: viewfinder.dimming,
-                disabledDimming: viewfinder.disabledDimming,
-                animation: RectangularViewfinderAnimation
-                    .fromJSON(viewfinder.animation ? JSON.parse(viewfinder.animation) : null),
-            };
-            return acc;
-        }, { defaultStyle: json.RectangularViewfinder.defaultStyle, styles: {} }),
-        AimerViewfinder: {
-            frameColor: Color.fromJSON(json.AimerViewfinder.frameColor),
-            dotColor: Color.fromJSON(json.AimerViewfinder.dotColor),
-        },
-        Brush: {
-            fillColor: Color
-                .fromJSON(json.Brush.fillColor),
-            strokeColor: Color
-                .fromJSON(json.Brush.strokeColor),
-            strokeWidth: json.Brush.strokeWidth,
-        },
-        deviceID: json.deviceID,
-        capacitorVersion: json.capacitorVersion,
-    };
-};
-
 var CapacitorFunction$1;
 (function (CapacitorFunction) {
     CapacitorFunction["GetDefaults"] = "getDefaults";
@@ -748,6 +641,8 @@ var CapacitorFunction$1;
     CapacitorFunction["SubscribeViewListener"] = "subscribeViewListener";
     CapacitorFunction["GetCurrentCameraState"] = "getCurrentCameraState";
     CapacitorFunction["GetIsTorchAvailable"] = "getIsTorchAvailable";
+    CapacitorFunction["GetLastFrame"] = "getLastFrame";
+    CapacitorFunction["GetLastFrameOrNull"] = "getLastFrameOrNull";
     CapacitorFunction["EmitFeedback"] = "emitFeedback";
     CapacitorFunction["SubscribeVolumeButtonObserver"] = "subscribeVolumeButtonObserver";
     CapacitorFunction["UnsubscribeVolumeButtonObserver"] = "unsubscribeVolumeButtonObserver";
@@ -759,11 +654,6 @@ const Capacitor$1 = {
     defaults: {},
     exec: (success, error, functionName, args) => capacitorExec(success, error, pluginName$1, functionName, args),
 };
-new Promise((resolve, reject) => core.Plugins[Capacitor$1.pluginName][CapacitorFunction$1.GetDefaults]().then((defaultsJSON) => {
-    const defaults = defaultsFromJSON$1(defaultsJSON);
-    Capacitor$1.defaults = defaults;
-    resolve(defaults);
-}, reject));
 
 var FrameSourceState;
 (function (FrameSourceState) {
@@ -916,11 +806,18 @@ var CapacitorFunction;
     CapacitorFunction["ResetIdCapture"] = "resetIdCapture";
     CapacitorFunction["VerifyCapturedId"] = "verifyCapturedId";
 })(CapacitorFunction || (CapacitorFunction = {}));
-const getDefaults = new Promise((resolve, reject) => core.Plugins[Capacitor.pluginName][CapacitorFunction.GetDefaults]().then((defaultsJSON) => {
-    const defaults = defaultsFromJSON(defaultsJSON);
-    Capacitor.defaults = defaults;
-    resolve(defaults);
-}, reject));
+const getDefaults = async () => {
+    await window.Capacitor.Plugins[pluginName][CapacitorFunction.GetDefaults]()
+        .then((defaultsJSON) => {
+        const defaults = defaultsFromJSON(defaultsJSON);
+        Capacitor.defaults = defaults;
+    })
+        .catch((error) => {
+        // tslint:disable-next-line:no-console
+        console.warn(error);
+    });
+    return Capacitor.defaults;
+};
 
 class IdCaptureProxy {
     static forIdCapture(idCapture) {
@@ -937,7 +834,7 @@ class IdCaptureProxy {
         // Necessary for not exposing internal API on CapturedId, while only passing the private "json" property
         // to native iOS and Android.
         const capturedIdJsonData = JSON.parse(capturedId).json;
-        return core.Plugins[Capacitor.pluginName][CapacitorFunction.VerifyCapturedId]({
+        return window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.VerifyCapturedId]({
             capturedId: JSON.stringify(capturedIdJsonData),
         });
     }
@@ -1818,16 +1715,20 @@ class IdCaptureListenerProxy {
         this.subscribeListener();
     }
     subscribeListener() {
-        core.Plugins[Capacitor.pluginName][CapacitorFunction.SubscribeIdCaptureListener]();
-        core.Plugins[Capacitor.pluginName].addListener(IdCaptureListenerEvent.DidCapture, this.notifyListeners.bind(this));
-        core.Plugins[Capacitor.pluginName].addListener(IdCaptureListenerEvent.DidFail, this.notifyListeners.bind(this));
-        core.Plugins[Capacitor.pluginName].addListener(IdCaptureListenerEvent.DidLocalize, this.notifyListeners.bind(this));
-        core.Plugins[Capacitor.pluginName].addListener(IdCaptureListenerEvent.DidReject, this.notifyListeners.bind(this));
+        window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.SubscribeIdCaptureListener]();
+        window.Capacitor.Plugins[Capacitor.pluginName]
+            .addListener(IdCaptureListenerEvent.DidCapture, this.notifyListeners.bind(this));
+        window.Capacitor.Plugins[Capacitor.pluginName]
+            .addListener(IdCaptureListenerEvent.DidFail, this.notifyListeners.bind(this));
+        window.Capacitor.Plugins[Capacitor.pluginName]
+            .addListener(IdCaptureListenerEvent.DidLocalize, this.notifyListeners.bind(this));
+        window.Capacitor.Plugins[Capacitor.pluginName]
+            .addListener(IdCaptureListenerEvent.DidReject, this.notifyListeners.bind(this));
     }
     notifyListeners(event) {
         const done = () => {
             this.idCapture.isInListenerCallback = false;
-            core.Plugins[Capacitor.pluginName].finishCallback({
+            window.Capacitor.Plugins[Capacitor.pluginName].finishCallback({
                 result: {
                     enabled: this.idCapture.isEnabled,
                     finishCallbackID: event.name,
@@ -1984,7 +1885,7 @@ class IdCaptureSettings extends DefaultSerializeable {
 }
 
 class ScanditIdPluginImplementation {
-    async initialize() {
+    async initialize(coreDefaults) {
         const api = {
             IdCapture,
             IdCaptureOverlay,
@@ -2014,14 +1915,16 @@ class ScanditIdPluginImplementation {
             SouthAfricaDlBarcodeResult,
             SouthAfricaIdBarcodeResult,
         };
-        return new Promise((resolve, reject) => getDefaults.then(() => {
-            resolve(api);
-        }, reject));
+        Capacitor$1.defaults = coreDefaults;
+        const idDefaults = await getDefaults();
+        Capacitor.defaults = idDefaults;
+        return api;
     }
 }
 core.registerPlugin('ScanditIdPlugin', {
     android: () => new ScanditIdPluginImplementation(),
     ios: () => new ScanditIdPluginImplementation(),
+    web: () => new ScanditIdPluginImplementation(),
 });
 // tslint:disable-next-line:variable-name
 const ScanditIdPlugin = new ScanditIdPluginImplementation();

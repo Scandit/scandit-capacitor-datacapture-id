@@ -1,5 +1,5 @@
-import { SupportedSides } from './Enums';
 import { DefaultSerializeable } from '../../../scandit-capacitor-datacapture-core/src/ts/Serializeable';
+import { SupportedSides } from './Enums';
 export class IdCaptureSettings extends DefaultSerializeable {
     constructor() {
         super();

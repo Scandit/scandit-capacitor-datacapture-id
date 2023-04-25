@@ -1,5 +1,5 @@
 import { CameraSettings } from '../../../../scandit-capacitor-datacapture-core/src/ts/Camera+Related';
-import { CameraSettingsDefaultsJSON, IdCaptureOverlayDefaults, IdCaptureOverlayDefaultsJSON } from '../../../../scandit-capacitor-datacapture-core/src/ts/Capacitor/Defaults';
+import type { CameraSettingsDefaultsJSON, IdCaptureOverlayDefaults, IdCaptureOverlayDefaultsJSON } from '../../../../scandit-capacitor-datacapture-core/src/ts/Capacitor/Defaults';
 export interface Defaults {
     IdCapture: {
         RecommendedCameraSettings: CameraSettings;

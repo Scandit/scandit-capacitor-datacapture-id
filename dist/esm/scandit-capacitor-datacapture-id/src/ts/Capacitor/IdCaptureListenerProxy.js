@@ -1,5 +1,4 @@
 import { IdCaptureSession } from '../IdCapture+Related';
-import { Plugins } from '@capacitor/core';
 import { Capacitor, CapacitorFunction } from './Capacitor';
 var IdCaptureListenerEvent;
 (function (IdCaptureListenerEvent) {
@@ -19,16 +18,20 @@ export class IdCaptureListenerProxy {
         this.subscribeListener();
     }
     subscribeListener() {
-        Plugins[Capacitor.pluginName][CapacitorFunction.SubscribeIdCaptureListener]();
-        Plugins[Capacitor.pluginName].addListener(IdCaptureListenerEvent.DidCapture, this.notifyListeners.bind(this));
-        Plugins[Capacitor.pluginName].addListener(IdCaptureListenerEvent.DidFail, this.notifyListeners.bind(this));
-        Plugins[Capacitor.pluginName].addListener(IdCaptureListenerEvent.DidLocalize, this.notifyListeners.bind(this));
-        Plugins[Capacitor.pluginName].addListener(IdCaptureListenerEvent.DidReject, this.notifyListeners.bind(this));
+        window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.SubscribeIdCaptureListener]();
+        window.Capacitor.Plugins[Capacitor.pluginName]
+            .addListener(IdCaptureListenerEvent.DidCapture, this.notifyListeners.bind(this));
+        window.Capacitor.Plugins[Capacitor.pluginName]
+            .addListener(IdCaptureListenerEvent.DidFail, this.notifyListeners.bind(this));
+        window.Capacitor.Plugins[Capacitor.pluginName]
+            .addListener(IdCaptureListenerEvent.DidLocalize, this.notifyListeners.bind(this));
+        window.Capacitor.Plugins[Capacitor.pluginName]
+            .addListener(IdCaptureListenerEvent.DidReject, this.notifyListeners.bind(this));
     }
     notifyListeners(event) {
         const done = () => {
             this.idCapture.isInListenerCallback = false;
-            Plugins[Capacitor.pluginName].finishCallback({
+            window.Capacitor.Plugins[Capacitor.pluginName].finishCallback({
                 result: {
                     enabled: this.idCapture.isEnabled,
                     finishCallbackID: event.name,

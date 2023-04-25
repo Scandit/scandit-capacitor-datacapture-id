@@ -1,3 +1,9 @@
+/*
+ * This file is part of the Scandit Data Capture SDK
+ *
+ * Copyright (C) 2023- Scandit AG. All rights reserved.
+ */
+
 import Foundation
 import Capacitor
 import ScanditCaptureCore
@@ -71,9 +77,9 @@ public class ScanditIdNative: CAPPlugin, DataCapturePlugin {
             return
         }
 
-        guard let result = IdCaptureCallbackResult.from((([
+        guard let result = IdCaptureCallbackResult.from(([
             "finishCallbackID": finishCallbackId,
-            "result": resultObject] as NSDictionary).jsonString)) else {
+            "result": resultObject] as NSDictionary).jsonString) else {
             call.reject(CommandError.invalidJSON.toJSONString())
             return
         }

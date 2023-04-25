@@ -1,4 +1,3 @@
-import { Plugins } from '@capacitor/core';
 import { Capacitor, CapacitorFunction } from './Capacitor';
 export class IdCaptureProxy {
     static forIdCapture(idCapture) {
@@ -15,7 +14,7 @@ export class IdCaptureProxy {
         // Necessary for not exposing internal API on CapturedId, while only passing the private "json" property
         // to native iOS and Android.
         const capturedIdJsonData = JSON.parse(capturedId).json;
-        return Plugins[Capacitor.pluginName][CapacitorFunction.VerifyCapturedId]({
+        return window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.VerifyCapturedId]({
             capturedId: JSON.stringify(capturedIdJsonData),
         });
     }

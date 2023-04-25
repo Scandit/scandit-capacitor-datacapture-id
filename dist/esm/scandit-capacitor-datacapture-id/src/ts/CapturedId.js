@@ -5,8 +5,8 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 import { Quadrilateral } from '../../../scandit-capacitor-datacapture-core/src/ts/Common';
-import { IdCaptureProxy } from './Capacitor/IdCaptureProxy';
 import { ignoreFromSerialization } from '../../../scandit-capacitor-datacapture-core/src/ts/Serializeable';
+import { IdCaptureProxy } from './Capacitor/IdCaptureProxy';
 export class DateResult {
     get day() { return this.json.day; }
     get month() { return this.json.month; }
