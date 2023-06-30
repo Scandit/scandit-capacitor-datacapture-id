@@ -55,20 +55,4 @@ extension ScanditIdNative: IdCaptureListener {
         waitForFinished(listenerEvent, callbackId: callback.id)
         finishBlockingCallback(with: idCapture, for: listenerEvent)
     }
-
-    public func idCapture(_ idCapture: IdCapture,
-                          didFailWithError error: Error,
-                          session: IdCaptureSession,
-                          frameData: FrameData) {
-        guard let callback = callbacks.idCaptureListener else {
-            return
-        }
-
-        idCaptureSession = session
-
-        let listenerEvent = ListenerEvent(name: .didFailInIdCapture,
-                                  argument: ["session": session.jsonString])
-        waitForFinished(listenerEvent, callbackId: callback.id)
-        finishBlockingCallback(with: idCapture, for: listenerEvent)
-    }
 }

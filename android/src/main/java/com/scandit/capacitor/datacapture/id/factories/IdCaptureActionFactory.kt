@@ -10,5 +10,4 @@ object IdCaptureActions {
     const val ACTION_ID_CAPTURED = "didCaptureInIdCapture"
     const val ACTION_ID_LOCALIZED = "didLocalizeInIdCapture"
     const val ACTION_ID_REJECTED = "didRejectInIdCapture"
-    const val ACTION_ERROR_CAPTURING = "didFailWithError"
 }

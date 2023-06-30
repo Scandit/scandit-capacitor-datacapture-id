@@ -696,6 +696,10 @@ export interface IdCaptureListener {
     didCaptureId?(idCapture: IdCapture, session: IdCaptureSession): void;
     didLocalizeId?(idCapture: IdCapture, session: IdCaptureSession): void;
     didRejectId?(idCapture: IdCapture, session: IdCaptureSession): void;
+    /**
+     * @deprecated This method is no longer executed by the listener.
+     * See didRejectId for scenarios previously reported by this callback.
+     */
     didFailWithError?(idCapture: IdCapture, error: IdCaptureError, session: IdCaptureSession): void;
 }
 export class IdCaptureOverlay implements DataCaptureOverlay {

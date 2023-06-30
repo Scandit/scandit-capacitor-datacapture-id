@@ -1699,7 +1699,6 @@ var capacitorScanditIdCapture = (function (exports, core) {
         IdCaptureListenerEvent["DidCapture"] = "didCaptureInIdCapture";
         IdCaptureListenerEvent["DidLocalize"] = "didLocalizeInIdCapture";
         IdCaptureListenerEvent["DidReject"] = "didRejectInIdCapture";
-        IdCaptureListenerEvent["DidFail"] = "didFailInIdCapture";
     })(IdCaptureListenerEvent || (IdCaptureListenerEvent = {}));
     class IdCaptureListenerProxy {
         static forIdCapture(idCapture) {
@@ -1715,8 +1714,6 @@ var capacitorScanditIdCapture = (function (exports, core) {
             window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.SubscribeIdCaptureListener]();
             window.Capacitor.Plugins[Capacitor.pluginName]
                 .addListener(IdCaptureListenerEvent.DidCapture, this.notifyListeners.bind(this));
-            window.Capacitor.Plugins[Capacitor.pluginName]
-                .addListener(IdCaptureListenerEvent.DidFail, this.notifyListeners.bind(this));
             window.Capacitor.Plugins[Capacitor.pluginName]
                 .addListener(IdCaptureListenerEvent.DidLocalize, this.notifyListeners.bind(this));
             window.Capacitor.Plugins[Capacitor.pluginName]
@@ -1760,12 +1757,6 @@ var capacitorScanditIdCapture = (function (exports, core) {
                                 .fromJSON(JSON.parse(event.argument.session)));
                         }
                         break;
-                    case IdCaptureListenerEvent.DidFail:
-                        if (listener.didFailWithError) {
-                            const session = IdCaptureSession
-                                .fromJSON(JSON.parse(event.argument.session));
-                            listener.didFailWithError(this.idCapture, session._error, session);
-                        }
                 }
             });
             return done();

@@ -114,15 +114,6 @@ class ScanditIdNative :
         idCaptureCallback?.onIdCaptured(mode, session, data)
     }
 
-    override fun onErrorEncountered(
-        mode: IdCapture,
-        error: Throwable,
-        session: IdCaptureSession,
-        data: FrameData
-    ) {
-        idCaptureCallback?.onErrorEncountered(mode, error, session, data)
-    }
-
     private fun onFinishIdCaptureMode(finishData: SerializableFinishModeCallbackData?) {
         idCaptureCallback?.onFinishCallback(finishData)
     }

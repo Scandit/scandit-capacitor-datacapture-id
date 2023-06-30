@@ -10,7 +10,6 @@ import com.getcapacitor.JSObject
 import com.scandit.capacitor.datacapture.core.data.SerializableFinishModeCallbackData
 import com.scandit.capacitor.datacapture.core.utils.Callback
 import com.scandit.capacitor.datacapture.id.CapacitorPlugin
-import com.scandit.capacitor.datacapture.id.factories.IdCaptureActions.ACTION_ERROR_CAPTURING
 import com.scandit.capacitor.datacapture.id.factories.IdCaptureActions.ACTION_ID_CAPTURED
 import com.scandit.capacitor.datacapture.id.factories.IdCaptureActions.ACTION_ID_LOCALIZED
 import com.scandit.capacitor.datacapture.id.factories.IdCaptureActions.ACTION_ID_REJECTED
@@ -59,15 +58,6 @@ class IdCaptureCallback(
             lockAndWait()
             onUnlock(mode)
         }
-    }
-
-    override fun onErrorEncountered(
-        mode: IdCapture,
-        error: Throwable,
-        session: IdCaptureSession,
-        data: FrameData
-    ) {
-        addActionOnCaptureEvent(ACTION_ERROR_CAPTURING, session)
     }
 
     private fun addActionOnCaptureEvent(actionName: String, session: IdCaptureSession) {
