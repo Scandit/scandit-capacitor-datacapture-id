@@ -13,47 +13,20 @@ import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
 import com.scandit.capacitor.datacapture.core.ScanditCaptureCoreNative
-import com.scandit.capacitor.datacapture.core.communication.ModeDeserializersProvider
 import com.scandit.capacitor.datacapture.core.data.SerializableCallbackAction.Companion.FIELD_FINISH_CALLBACK_ID
 import com.scandit.capacitor.datacapture.core.data.SerializableFinishModeCallbackData
-import com.scandit.capacitor.datacapture.core.data.defaults.SerializableCameraSettingsDefault
 import com.scandit.capacitor.datacapture.core.errors.JsonParseError
-import com.scandit.capacitor.datacapture.id.callbacks.IdCaptureCallback
-import com.scandit.capacitor.datacapture.id.data.defaults.SerializableIdCaptureDefaults
-import com.scandit.capacitor.datacapture.id.data.defaults.SerializableIdCaptureOverlayDefaults
-import com.scandit.capacitor.datacapture.id.data.defaults.SerializableIdDefaults
-import com.scandit.capacitor.datacapture.id.factories.IdCaptureActions.ACTION_ID_CAPTURED
-import com.scandit.capacitor.datacapture.id.factories.IdCaptureActions.ACTION_ID_LOCALIZED
-import com.scandit.capacitor.datacapture.id.factories.IdCaptureActions.ACTION_ID_REJECTED
-import com.scandit.capacitor.datacapture.id.handlers.IdCaptureHandler
-import com.scandit.datacapture.core.data.FrameData
-import com.scandit.datacapture.core.json.JsonValue
-import com.scandit.datacapture.id.capture.IdCapture
-import com.scandit.datacapture.id.capture.IdCaptureListener
-import com.scandit.datacapture.id.capture.IdCaptureSession
-import com.scandit.datacapture.id.capture.serialization.IdCaptureDeserializer
-import com.scandit.datacapture.id.capture.serialization.IdCaptureDeserializerListener
-import com.scandit.datacapture.id.data.CapturedId
-import com.scandit.datacapture.id.ui.overlay.IdCaptureOverlay
-import com.scandit.datacapture.id.verification.aamvavizbarcode.AamvaVizBarcodeComparisonVerifier
+import com.scandit.capacitor.datacapture.core.utils.CapacitorResult
+import com.scandit.datacapture.frameworks.core.events.Emitter
+import com.scandit.datacapture.frameworks.id.IdCaptureModule
+import com.scandit.datacapture.frameworks.id.listeners.FrameworksIdCaptureListener
 import org.json.JSONException
 import org.json.JSONObject
 
 @CapacitorPlugin(name = "ScanditIdNative")
-class ScanditIdNative :
-    Plugin(),
-    com.scandit.capacitor.datacapture.id.CapacitorPlugin,
-    ModeDeserializersProvider,
-    IdCaptureDeserializerListener,
-    IdCaptureListener {
+class ScanditIdNative : Plugin(), Emitter {
 
-    companion object {
-        private const val FIELD_RESULT = "result"
-        private const val CORE_PLUGIN_NAME = "ScanditCaptureCoreNative"
-    }
-
-    private var idCaptureCallback: IdCaptureCallback? = null
-    private val idCaptureHandler: IdCaptureHandler = IdCaptureHandler(this)
+    private val idCaptureModule = IdCaptureModule(FrameworksIdCaptureListener(this))
 
     private var lastIdCaptureEnabledState: Boolean = false
 
@@ -68,95 +41,35 @@ class ScanditIdNative :
         } else {
             Log.e("Registering:", "Core not found")
         }
+
+        idCaptureModule.onCreate(bridge.context)
     }
 
-    fun onStop() {
-        lastIdCaptureEnabledState = idCaptureHandler.idCapture?.isEnabled ?: false
-        idCaptureHandler.idCapture?.isEnabled = false
-        idCaptureCallback?.forceRelease()
+    override fun handleOnStart() {
+        idCaptureModule.setModeEnabled(lastIdCaptureEnabledState)
     }
 
-    fun onStart() {
-        idCaptureHandler.idCapture?.isEnabled = lastIdCaptureEnabledState
+    override fun handleOnStop() {
+        lastIdCaptureEnabledState = idCaptureModule.isModeEnabled()
+        idCaptureModule.setModeEnabled(false)
     }
 
-    fun onReset() {
-        idCaptureHandler.disposeCurrent()
-        idCaptureCallback?.dispose()
-    }
-
-    override fun provideModeDeserializers() = listOf(
-        IdCaptureDeserializer().also {
-            it.listener = this
-        }
-    )
-
-    override fun onModeDeserializationFinished(
-        deserializer: IdCaptureDeserializer,
-        mode: IdCapture,
-        json: JsonValue
-    ) {
-        if (json.contains("enabled")) {
-            mode.isEnabled = json.requireByKeyAsBoolean("enabled")
-        }
-        idCaptureHandler.attachIdCapture(mode)
-    }
-
-    override fun onIdCaptured(mode: IdCapture, session: IdCaptureSession, data: FrameData) {
-        idCaptureCallback?.onIdCaptured(mode, session, data)
-    }
-
-    override fun onIdLocalized(mode: IdCapture, session: IdCaptureSession, data: FrameData) {
-        idCaptureCallback?.onIdLocalized(mode, session, data)
-    }
-
-    override fun onIdRejected(mode: IdCapture, session: IdCaptureSession, data: FrameData) {
-        idCaptureCallback?.onIdCaptured(mode, session, data)
-    }
-
-    private fun onFinishIdCaptureMode(finishData: SerializableFinishModeCallbackData?) {
-        idCaptureCallback?.onFinishCallback(finishData)
+    override fun handleOnDestroy() {
+        idCaptureModule.onDestroy()
     }
 
     @PluginMethod
     fun getDefaults(call: PluginCall) {
-        try {
-            val defaults = SerializableIdDefaults(
-                serializableIdCaptureDefaults = SerializableIdCaptureDefaults(
-                    recommendedCameraSettings = SerializableCameraSettingsDefault(
-                        IdCapture.createRecommendedCameraSettings()
-                    ),
-                    idCaptureOverlay = SerializableIdCaptureOverlayDefaults(
-                        IdCaptureOverlay.defaultCapturedBrush(),
-                        IdCaptureOverlay.defaultLocalizedBrush(),
-                        IdCaptureOverlay.defaultRejectedBrush()
-                    )
-                )
-            )
-            call.resolve(JSObject.fromJSONObject(defaults.toJson()))
-        } catch (e: Exception) {
-            println(e)
-            call.reject(JsonParseError(e.message).toString())
-        }
+        call.resolve(JSObject.fromJSONObject(JSONObject(idCaptureModule.getDefaults())))
     }
 
     @PluginMethod
     fun verifyCapturedId(call: PluginCall) {
         try {
-            val capturedIdJson = call.data.getString("capturedId") ?: return
-            val capturedId = CapturedId.fromJson(capturedIdJson)
-            call.resolve(
-                JSObject.fromJSONObject(
-                    JSONObject(
-                        mapOf(
-                            FIELD_RESULT to AamvaVizBarcodeComparisonVerifier
-                                .create()
-                                .verify(capturedId)
-                                .toJson()
-                        )
-                    )
-                )
-            )
+            val capturedIdJson = call.data.getString("capturedId")
+                ?: return call.reject("Request doesn't contain the captureId")
+
+            idCaptureModule.verifyCaptureId(capturedIdJson, CapacitorResult(call))
         } catch (e: Exception) {
             call.reject(JsonParseError(e.message).toString())
         }
@@ -164,14 +77,13 @@ class ScanditIdNative :
 
     @PluginMethod
     fun subscribeIdCaptureListener(call: PluginCall) {
-        idCaptureCallback?.dispose()
-        idCaptureCallback = IdCaptureCallback(this)
+        idCaptureModule.addListener()
         call.resolve()
     }
 
     @PluginMethod
     fun resetIdCapture(call: PluginCall) {
-        idCaptureHandler.idCapture?.reset()
+        idCaptureModule.resetMode()
         call.resolve()
     }
 
@@ -184,12 +96,25 @@ class ScanditIdNative :
                 throw JSONException("Missing $FIELD_RESULT field in response json")
             }
             val result: JSONObject = data.optJSONObject(FIELD_RESULT) ?: JSONObject()
-            when {
-                isFinishIdCaptureModeCallback(result) -> onFinishIdCaptureMode(
-                    SerializableFinishModeCallbackData.fromJson(result)
-                )
-                else ->
-                    throw JSONException("Cannot recognise finish callback action with data $data")
+
+            if (!result.has(FIELD_FINISH_CALLBACK_ID)) {
+                throw JSONException("Cannot recognise finish callback action with data $data")
+            }
+
+            val resultData = SerializableFinishModeCallbackData.fromJson(result)
+
+            when (result[FIELD_FINISH_CALLBACK_ID]) {
+                FrameworksIdCaptureListener.ON_ID_CAPTURED_EVENT_NAME ->
+                    idCaptureModule.finishDidCaptureId(resultData?.enabled == true)
+
+                FrameworksIdCaptureListener.ON_ID_LOCALIZED_EVENT_NAME ->
+                    idCaptureModule.finishDidLocalizeId(resultData?.enabled == true)
+
+                FrameworksIdCaptureListener.ON_ID_REJECTED_EVENT_NAME ->
+                    idCaptureModule.finishDidRejectId(resultData?.enabled == true)
+
+                FrameworksIdCaptureListener.ON_TIMEOUT_EVENT_NAME ->
+                    idCaptureModule.finishDidTimeout(resultData?.enabled == true)
             }
         } catch (e: JSONException) {
             println(e)
@@ -200,18 +125,21 @@ class ScanditIdNative :
         }
     }
 
-    private fun isFinishIdCaptureModeCallback(data: JSONObject) =
-        data.has(FIELD_FINISH_CALLBACK_ID) && (
-            data[FIELD_FINISH_CALLBACK_ID] == ACTION_ID_CAPTURED ||
-                data[FIELD_FINISH_CALLBACK_ID] == ACTION_ID_LOCALIZED ||
-                data[FIELD_FINISH_CALLBACK_ID] == ACTION_ID_REJECTED
-            )
+    override fun emit(eventName: String, payload: MutableMap<String, Any?>) {
+        val capacitorPayload = mutableMapOf<String, Any?>()
+        capacitorPayload[FIELD_EVENT_ARGUMENT] = payload
+        capacitorPayload[FIELD_EVENT_NAME] = eventName
 
-    override fun notify(name: String, data: JSObject) {
-        notifyListeners(name, data)
+        notifyListeners(eventName, JSObject.fromJSONObject(JSONObject(capacitorPayload)))
     }
-}
 
-interface CapacitorPlugin {
-    fun notify(name: String, data: JSObject)
+    override fun hasListenersForEvent(eventName: String): Boolean = this.hasListeners(eventName)
+
+    companion object {
+        private const val FIELD_RESULT = "result"
+        private const val CORE_PLUGIN_NAME = "ScanditCaptureCoreNative"
+
+        private const val FIELD_EVENT_ARGUMENT = "argument"
+        private const val FIELD_EVENT_NAME = "name"
+    }
 }

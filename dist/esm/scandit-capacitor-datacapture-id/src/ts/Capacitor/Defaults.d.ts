@@ -7,9 +7,7 @@ export interface Defaults {
     };
 }
 export interface DefaultsJSON {
-    IdCapture: {
-        RecommendedCameraSettings: CameraSettingsDefaultsJSON;
-        IdCaptureOverlayDefaults: IdCaptureOverlayDefaultsJSON;
-    };
+    RecommendedCameraSettings: CameraSettingsDefaultsJSON;
+    IdCaptureOverlay: IdCaptureOverlayDefaultsJSON;
 }
 export declare const defaultsFromJSON: (json: DefaultsJSON) => Defaults;

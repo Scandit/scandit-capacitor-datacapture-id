@@ -36,16 +36,13 @@ struct IdCaptureCallbackResult: BlockingListenerCallbackResult {
 }
 
 @objc(ScanditIdNative)
-public class ScanditIdNative: CAPPlugin, DataCapturePlugin {
+public class ScanditIdNative: CAPPlugin {
 
-    lazy public var modeDeserializers: [DataCaptureModeDeserializer] = {
+    lazy public var modeDeserializer: IdCaptureDeserializer = {
             let idCaptureDeserializer = IdCaptureDeserializer()
             idCaptureDeserializer.delegate = self
-            return [idCaptureDeserializer]
+            return idCaptureDeserializer
     }()
-
-    lazy public var componentDeserializers: [DataCaptureComponentDeserializer] = []
-    lazy public var components: [DataCaptureComponent] = []
 
     lazy var callbacks = IdCaptureCallbacks()
     lazy var callbackLocks = CallbackLocks()
@@ -54,7 +51,7 @@ public class ScanditIdNative: CAPPlugin, DataCapturePlugin {
     var idCaptureSession: IdCaptureSession?
 
     override public func load() {
-        ScanditCaptureCore.dataCapturePlugins.append(self as DataCapturePlugin)
+        ScanditCapacitorCore.registerModeDeserializer(modeDeserializer)
     }
 
     // MARK: Listeners
@@ -100,7 +97,7 @@ public class ScanditIdNative: CAPPlugin, DataCapturePlugin {
         }
         let result = AAMVAVizBarcodeComparisonVerifier.init().verify(capturedId).jsonString
         call.resolve([
-            "result": result
+            "data": result
         ])
     }
 
@@ -130,7 +127,7 @@ public class ScanditIdNative: CAPPlugin, DataCapturePlugin {
     @objc(getDefaults:)
     func getDefaults(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
-            let defaults = ScanditIdCaptureDefaults()
+            let defaults = ScanditIdCaptureDefaults.defaults
 
             var defaultsDictionary: [String: Any]? {
                     guard let data = try? JSONEncoder().encode(defaults) else {

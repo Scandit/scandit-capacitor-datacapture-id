@@ -18,7 +18,10 @@ export class IdCaptureProxy {
     private idCapture;
     static forIdCapture(idCapture: IdCapture): IdCaptureProxy;
     reset(): Promise<void>;
-    verifyCapturedId(capturedId: string): Promise<string | null>;
+    verifyCapturedId(capturedId: string): Promise<VerificationResult>;
+}
+export interface VerificationResult {
+    data: any | null;
 }
 
 
@@ -1078,7 +1081,8 @@ export class MarginsWithUnit {
     private static fromJSON;
     private static get zero();
     constructor(left: NumberWithUnit, right: NumberWithUnit, top: NumberWithUnit, bottom: NumberWithUnit);
-} type ColorJSON = string;
+}
+type ColorJSON = string;
 interface PrivateColor {
     fromJSON(json: ColorJSON): Color;
 }
