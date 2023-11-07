@@ -113,7 +113,7 @@ export interface AAMVABarcodeResultJSON {
     vehicleClass: string | null;
     weightKg: number | null;
     weightLbs: number | null;
-    barcodeDataElements: {
+    dictionary: {
         [key: string]: string;
     };
 }
@@ -912,6 +912,8 @@ export class DataCaptureViewProxy {
     viewPointForFramePoint(point: Point): Promise<Point>;
     viewQuadrilateralForFrameQuadrilateral(quadrilateral: Quadrilateral): Promise<Quadrilateral>;
     private subscribeListener;
+    unregisterListenerForViewEvents(): void;
+    subscribeDidChangeSize(): void;
     private notifyListeners;
     private initialize;
 }

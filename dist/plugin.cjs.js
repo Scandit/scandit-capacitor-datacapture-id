@@ -639,6 +639,7 @@ var CapacitorFunction$1;
     CapacitorFunction["ViewPointForFramePoint"] = "viewPointForFramePoint";
     CapacitorFunction["ViewQuadrilateralForFrameQuadrilateral"] = "viewQuadrilateralForFrameQuadrilateral";
     CapacitorFunction["SubscribeViewListener"] = "subscribeViewListener";
+    CapacitorFunction["UnsubscribeViewListener"] = "unsubscribeViewListener";
     CapacitorFunction["GetCurrentCameraState"] = "getCurrentCameraState";
     CapacitorFunction["GetIsTorchAvailable"] = "getIsTorchAvailable";
     CapacitorFunction["GetLastFrame"] = "getLastFrame";
@@ -1087,7 +1088,7 @@ class AAMVABarcodeResult {
         return DateResult.fromJSON(this.json.cardRevisionDate);
     }
     get documentDiscriminatorNumber() { return this.json.documentDiscriminatorNumber; }
-    get barcodeDataElements() { return this.json.barcodeDataElements; }
+    get barcodeDataElements() { return this.json.dictionary; }
     static fromJSON(json) {
         const result = new AAMVABarcodeResult();
         result.json = json;
@@ -1771,19 +1772,19 @@ class IdCaptureListenerProxy {
                 case IdCaptureListenerEvent.DidCapture:
                     if (listener.didCaptureId) {
                         listener.didCaptureId(this.idCapture, IdCaptureSession
-                            .fromJSON(JSON.parse(event.argument.session)));
+                            .fromJSON(JSON.parse(event.session)));
                     }
                     break;
                 case IdCaptureListenerEvent.DidLocalize:
                     if (listener.didLocalizeId) {
                         listener.didLocalizeId(this.idCapture, IdCaptureSession
-                            .fromJSON(JSON.parse(event.argument.session)));
+                            .fromJSON(JSON.parse(event.session)));
                     }
                     break;
                 case IdCaptureListenerEvent.DidReject:
                     if (listener.didRejectId) {
                         listener.didRejectId(this.idCapture, IdCaptureSession
-                            .fromJSON(JSON.parse(event.argument.session)));
+                            .fromJSON(JSON.parse(event.session)));
                     }
                     break;
             }
