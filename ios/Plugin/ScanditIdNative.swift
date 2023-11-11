@@ -4,10 +4,11 @@
  * Copyright (C) 2023- Scandit AG. All rights reserved.
  */
 
-import Capacitor
 import Foundation
+import Capacitor
+import ScanditCaptureCore
 import ScanditCapacitorDatacaptureCore
-import ScanditFrameworksId
+import ScanditIdCapture
 
 class IdCaptureCallbacks {
     var idCaptureListener: Callback?
@@ -36,25 +37,28 @@ struct IdCaptureCallbackResult: BlockingListenerCallbackResult {
 
 @objc(ScanditIdNative)
 public class ScanditIdNative: CAPPlugin {
-    var idModule: IdCaptureModule!
+
+    lazy public var modeDeserializer: IdCaptureDeserializer = {
+            let idCaptureDeserializer = IdCaptureDeserializer()
+            idCaptureDeserializer.delegate = self
+            return idCaptureDeserializer
+    }()
+
     lazy var callbacks = IdCaptureCallbacks()
+    lazy var callbackLocks = CallbackLocks()
+
+    var idCapture: IdCapture?
+    var idCaptureSession: IdCaptureSession?
 
     override public func load() {
-        let emitter = CapacitorEventEmitter(with: self)
-        let idCaptureListener = FrameworksIdCaptureListener(emitter: emitter)
-        idModule = IdCaptureModule(idCaptureListener: idCaptureListener)
-        idModule.didStart()
-    }
-
-    func onReset() {
-        idModule.didStop()
+        ScanditCapacitorCore.registerModeDeserializer(modeDeserializer)
     }
 
     // MARK: Listeners
 
     @objc(subscribeIdCaptureListener:)
     func subscribeIdCaptureListener(_ call: CAPPluginCall) {
-        idModule.addListener()
+        callbacks.idCaptureListener = Callback(id: call.callbackId)
         call.resolve()
     }
 
@@ -76,18 +80,8 @@ public class ScanditIdNative: CAPPlugin {
             call.reject(CommandError.invalidJSON.toJSONString())
             return
         }
-        let enabled = result.enabled ?? false
-        if result.isForListenerEvent(.didLocalizeInIdCapture) {
-            idModule.finishDidLocalizeId(enabled: enabled)
-        } else if result.isForListenerEvent(.didCaptureInIdCapture) {
-            idModule.finishDidCaptureId(enabled: enabled)
-        } else if result.isForListenerEvent(.didRejectInIdCapture) {
-            idModule.finishDidRejectId(enabled: enabled)
-        } else if result.isForListenerEvent(.didTimoutInIdCapture) {
-            idModule.finishTimeout(enabled: enabled)
-        } else {
-            call.reject("Invalid 'finishCallbackId' for IdCapture: \(result.finishCallbackID.rawValue)")
-        }
+        callbackLocks.setResult(result, for: result.finishCallbackID)
+        callbackLocks.release(for: result.finishCallbackID)
         call.resolve()
     }
 
@@ -97,22 +91,66 @@ public class ScanditIdNative: CAPPlugin {
             call.reject(CommandError.invalidJSON.toJSONString())
             return
         }
-        idModule.verifyCapturedIdAamvaViz(jsonString: jsonString,
-                                          result: CapacitorResult(call))
+        guard let capturedId = try? CapturedId(jsonString: jsonString) else {
+            call.resolve()
+            return
+        }
+        let result = AAMVAVizBarcodeComparisonVerifier.init().verify(capturedId).jsonString
+        call.resolve([
+            "data": result
+        ])
+    }
+
+    func waitForFinished(_ listenerEvent: ListenerEvent, callbackId: String) {
+        callbackLocks.wait(for: listenerEvent.name, afterDoing: {
+            self.notifyListeners(listenerEvent.name.rawValue, data: listenerEvent.resultMessage as? [String: Any])
+        })
+    }
+
+    func finishBlockingCallback(with mode: DataCaptureMode, for listenerEvent: ListenerEvent) {
+        defer {
+            callbackLocks.clearResult(for: listenerEvent.name)
+        }
+
+        guard let result = callbackLocks.getResult(for: listenerEvent.name) as? IdCaptureCallbackResult,
+            let enabled = result.enabled else {
+            return
+        }
+
+        if enabled != mode.isEnabled {
+            mode.isEnabled = enabled
+        }
     }
 
     // MARK: Defaults
 
     @objc(getDefaults:)
     func getDefaults(_ call: CAPPluginCall) {
-        call.resolve(idModule.defaults.toEncodable() as PluginCallResultData)
+        DispatchQueue.main.async {
+            let defaults = ScanditIdCaptureDefaults.defaults
+
+            var defaultsDictionary: [String: Any]? {
+                    guard let data = try? JSONEncoder().encode(defaults) else {
+                        return nil
+                    }
+                    guard let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else
+                    {
+                        return nil
+                    }
+                    return json
+                }
+
+            call.resolve(defaultsDictionary ?? [:])
+        }
     }
 
     // MARK: Reset
 
     @objc(resetIdCapture:)
     func resetIdCapture(_ call: CAPPluginCall) {
-        idModule.resetMode()
+        if let idCapture = idCapture {
+            idCapture.reset()
+        }
         call.resolve()
     }
 }

@@ -126,11 +126,12 @@ class ScanditIdNative : Plugin(), Emitter {
     }
 
     override fun emit(eventName: String, payload: MutableMap<String, Any?>) {
-        payload[FIELD_EVENT_NAME] = eventName
+        val capacitorPayload = mutableMapOf<String, Any?>()
+        capacitorPayload[FIELD_EVENT_ARGUMENT] = payload
+        capacitorPayload[FIELD_EVENT_NAME] = eventName
 
-        notifyListeners(eventName, JSObject.fromJSONObject(JSONObject(payload)))
+        notifyListeners(eventName, JSObject.fromJSONObject(JSONObject(capacitorPayload)))
     }
-
 
     override fun hasListenersForEvent(eventName: String): Boolean = this.hasListeners(eventName)
 
