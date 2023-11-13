@@ -18,10 +18,7 @@ export class IdCaptureProxy {
     private idCapture;
     static forIdCapture(idCapture: IdCapture): IdCaptureProxy;
     reset(): Promise<void>;
-    verifyCapturedId(capturedId: string): Promise<VerificationResult>;
-}
-export interface VerificationResult {
-    data: any | null;
+    verifyCapturedId(capturedId: string): Promise<string | null>;
 }
 
 
@@ -830,15 +827,12 @@ export interface CameraSettingsJSON {
     zoomGestureZoomFactor: number;
     focusGestureStrategy: string;
     shouldPreferSmoothAutoFocus: boolean;
-    properties: {
-        [key: string]: any;
-    };
+    api: number;
 }
 interface PrivateCameraSettings {
     fromJSON(json: CameraSettingsJSON): CameraSettings;
 }
 export class CameraSettings {
-    private focusHiddenProperties;
     preferredResolution: VideoResolution;
     zoomFactor: number;
     zoomGestureZoomFactor: number;
@@ -1084,8 +1078,7 @@ export class MarginsWithUnit {
     private static fromJSON;
     private static get zero();
     constructor(left: NumberWithUnit, right: NumberWithUnit, top: NumberWithUnit, bottom: NumberWithUnit);
-}
-type ColorJSON = string;
+} type ColorJSON = string;
 interface PrivateColor {
     fromJSON(json: ColorJSON): Color;
 }

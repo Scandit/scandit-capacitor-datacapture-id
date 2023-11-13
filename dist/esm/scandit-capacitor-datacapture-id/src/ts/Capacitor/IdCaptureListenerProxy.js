@@ -2,9 +2,9 @@ import { IdCaptureSession } from '../IdCapture+Related';
 import { Capacitor, CapacitorFunction } from './Capacitor';
 var IdCaptureListenerEvent;
 (function (IdCaptureListenerEvent) {
-    IdCaptureListenerEvent["DidCapture"] = "IdCaptureListener.didCaptureId";
-    IdCaptureListenerEvent["DidLocalize"] = "IdCaptureListener.didLocalizeId";
-    IdCaptureListenerEvent["DidReject"] = "IdCaptureListener.didRejectId";
+    IdCaptureListenerEvent["DidCapture"] = "didCaptureInIdCapture";
+    IdCaptureListenerEvent["DidLocalize"] = "didLocalizeInIdCapture";
+    IdCaptureListenerEvent["DidReject"] = "didRejectInIdCapture";
 })(IdCaptureListenerEvent || (IdCaptureListenerEvent = {}));
 export class IdCaptureListenerProxy {
     static forIdCapture(idCapture) {
