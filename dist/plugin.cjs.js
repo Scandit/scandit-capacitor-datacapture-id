@@ -5,10 +5,6 @@ Object.defineProperty(exports, '__esModule', { value: true });
 var core = require('@capacitor/core');
 
 class CapacitorError {
-    constructor(code, message) {
-        this.code = code;
-        this.message = message;
-    }
     static fromJSON(json) {
         if (json && json.code && json.message) {
             return new CapacitorError(json.code, json.message);
@@ -16,6 +12,10 @@ class CapacitorError {
         else {
             return null;
         }
+    }
+    constructor(code, message) {
+        this.code = code;
+        this.message = message;
     }
 }
 const capacitorExec = (successCallback, errorCallback, pluginName, functionName, args) => {
@@ -111,18 +111,13 @@ class DefaultSerializeable {
     }
 }
 
-var __decorate$5 = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
+var __decorate$6 = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 class Point extends DefaultSerializeable {
-    constructor(x, y) {
-        super();
-        this._x = x;
-        this._y = y;
-    }
     get x() {
         return this._x;
     }
@@ -132,21 +127,19 @@ class Point extends DefaultSerializeable {
     static fromJSON(json) {
         return new Point(json.x, json.y);
     }
+    constructor(x, y) {
+        super();
+        this._x = x;
+        this._y = y;
+    }
 }
-__decorate$5([
+__decorate$6([
     nameForSerialization('x')
 ], Point.prototype, "_x", void 0);
-__decorate$5([
+__decorate$6([
     nameForSerialization('y')
 ], Point.prototype, "_y", void 0);
 class Quadrilateral extends DefaultSerializeable {
-    constructor(topLeft, topRight, bottomRight, bottomLeft) {
-        super();
-        this._topLeft = topLeft;
-        this._topRight = topRight;
-        this._bottomRight = bottomRight;
-        this._bottomLeft = bottomLeft;
-    }
     get topLeft() {
         return this._topLeft;
     }
@@ -162,17 +155,24 @@ class Quadrilateral extends DefaultSerializeable {
     static fromJSON(json) {
         return new Quadrilateral(Point.fromJSON(json.topLeft), Point.fromJSON(json.topRight), Point.fromJSON(json.bottomRight), Point.fromJSON(json.bottomLeft));
     }
+    constructor(topLeft, topRight, bottomRight, bottomLeft) {
+        super();
+        this._topLeft = topLeft;
+        this._topRight = topRight;
+        this._bottomRight = bottomRight;
+        this._bottomLeft = bottomLeft;
+    }
 }
-__decorate$5([
+__decorate$6([
     nameForSerialization('topLeft')
 ], Quadrilateral.prototype, "_topLeft", void 0);
-__decorate$5([
+__decorate$6([
     nameForSerialization('topRight')
 ], Quadrilateral.prototype, "_topRight", void 0);
-__decorate$5([
+__decorate$6([
     nameForSerialization('bottomRight')
 ], Quadrilateral.prototype, "_bottomRight", void 0);
-__decorate$5([
+__decorate$6([
     nameForSerialization('bottomLeft')
 ], Quadrilateral.prototype, "_bottomLeft", void 0);
 var MeasureUnit;
@@ -182,11 +182,6 @@ var MeasureUnit;
     MeasureUnit["Fraction"] = "fraction";
 })(MeasureUnit || (MeasureUnit = {}));
 class NumberWithUnit extends DefaultSerializeable {
-    constructor(value, unit) {
-        super();
-        this._value = value;
-        this._unit = unit;
-    }
     get value() {
         return this._value;
     }
@@ -196,19 +191,19 @@ class NumberWithUnit extends DefaultSerializeable {
     static fromJSON(json) {
         return new NumberWithUnit(json.value, json.unit);
     }
+    constructor(value, unit) {
+        super();
+        this._value = value;
+        this._unit = unit;
+    }
 }
-__decorate$5([
+__decorate$6([
     nameForSerialization('value')
 ], NumberWithUnit.prototype, "_value", void 0);
-__decorate$5([
+__decorate$6([
     nameForSerialization('unit')
 ], NumberWithUnit.prototype, "_unit", void 0);
 class PointWithUnit extends DefaultSerializeable {
-    constructor(x, y) {
-        super();
-        this._x = x;
-        this._y = y;
-    }
     get x() {
         return this._x;
     }
@@ -221,76 +216,76 @@ class PointWithUnit extends DefaultSerializeable {
     static get zero() {
         return new PointWithUnit(new NumberWithUnit(0, MeasureUnit.Pixel), new NumberWithUnit(0, MeasureUnit.Pixel));
     }
+    constructor(x, y) {
+        super();
+        this._x = x;
+        this._y = y;
+    }
 }
-__decorate$5([
+__decorate$6([
     nameForSerialization('x')
 ], PointWithUnit.prototype, "_x", void 0);
-__decorate$5([
+__decorate$6([
     nameForSerialization('y')
 ], PointWithUnit.prototype, "_y", void 0);
 class Rect extends DefaultSerializeable {
-    constructor(origin, size) {
-        super();
-        this._origin = origin;
-        this._size = size;
-    }
     get origin() {
         return this._origin;
     }
     get size() {
         return this._size;
     }
+    constructor(origin, size) {
+        super();
+        this._origin = origin;
+        this._size = size;
+    }
 }
-__decorate$5([
+__decorate$6([
     nameForSerialization('origin')
 ], Rect.prototype, "_origin", void 0);
-__decorate$5([
+__decorate$6([
     nameForSerialization('size')
 ], Rect.prototype, "_size", void 0);
 class RectWithUnit extends DefaultSerializeable {
-    constructor(origin, size) {
-        super();
-        this._origin = origin;
-        this._size = size;
-    }
     get origin() {
         return this._origin;
     }
     get size() {
         return this._size;
     }
+    constructor(origin, size) {
+        super();
+        this._origin = origin;
+        this._size = size;
+    }
 }
-__decorate$5([
+__decorate$6([
     nameForSerialization('origin')
 ], RectWithUnit.prototype, "_origin", void 0);
-__decorate$5([
+__decorate$6([
     nameForSerialization('size')
 ], RectWithUnit.prototype, "_size", void 0);
 class SizeWithUnit extends DefaultSerializeable {
-    constructor(width, height) {
-        super();
-        this._width = width;
-        this._height = height;
-    }
     get width() {
         return this._width;
     }
     get height() {
         return this._height;
     }
-}
-__decorate$5([
-    nameForSerialization('width')
-], SizeWithUnit.prototype, "_width", void 0);
-__decorate$5([
-    nameForSerialization('height')
-], SizeWithUnit.prototype, "_height", void 0);
-class Size extends DefaultSerializeable {
     constructor(width, height) {
         super();
         this._width = width;
         this._height = height;
     }
+}
+__decorate$6([
+    nameForSerialization('width')
+], SizeWithUnit.prototype, "_width", void 0);
+__decorate$6([
+    nameForSerialization('height')
+], SizeWithUnit.prototype, "_height", void 0);
+class Size extends DefaultSerializeable {
     get width() {
         return this._width;
     }
@@ -300,29 +295,34 @@ class Size extends DefaultSerializeable {
     static fromJSON(json) {
         return new Size(json.width, json.height);
     }
+    constructor(width, height) {
+        super();
+        this._width = width;
+        this._height = height;
+    }
 }
-__decorate$5([
+__decorate$6([
     nameForSerialization('width')
 ], Size.prototype, "_width", void 0);
-__decorate$5([
+__decorate$6([
     nameForSerialization('height')
 ], Size.prototype, "_height", void 0);
 class SizeWithAspect {
-    constructor(size, aspect) {
-        this._size = size;
-        this._aspect = aspect;
-    }
     get size() {
         return this._size;
     }
     get aspect() {
         return this._aspect;
     }
+    constructor(size, aspect) {
+        this._size = size;
+        this._aspect = aspect;
+    }
 }
-__decorate$5([
+__decorate$6([
     nameForSerialization('size')
 ], SizeWithAspect.prototype, "_size", void 0);
-__decorate$5([
+__decorate$6([
     nameForSerialization('aspect')
 ], SizeWithAspect.prototype, "_aspect", void 0);
 var SizingMode;
@@ -425,26 +425,19 @@ class SizeWithUnitAndAspect {
         }
     }
 }
-__decorate$5([
+__decorate$6([
     nameForSerialization('widthAndHeight')
 ], SizeWithUnitAndAspect.prototype, "_widthAndHeight", void 0);
-__decorate$5([
+__decorate$6([
     nameForSerialization('widthAndAspectRatio')
 ], SizeWithUnitAndAspect.prototype, "_widthAndAspectRatio", void 0);
-__decorate$5([
+__decorate$6([
     nameForSerialization('heightAndAspectRatio')
 ], SizeWithUnitAndAspect.prototype, "_heightAndAspectRatio", void 0);
-__decorate$5([
+__decorate$6([
     nameForSerialization('shorterDimensionAndAspectRatio')
 ], SizeWithUnitAndAspect.prototype, "_shorterDimensionAndAspectRatio", void 0);
 class MarginsWithUnit extends DefaultSerializeable {
-    constructor(left, right, top, bottom) {
-        super();
-        this._left = left;
-        this._right = right;
-        this._top = top;
-        this._bottom = bottom;
-    }
     get left() {
         return this._left;
     }
@@ -463,23 +456,27 @@ class MarginsWithUnit extends DefaultSerializeable {
     static get zero() {
         return new MarginsWithUnit(new NumberWithUnit(0, MeasureUnit.Pixel), new NumberWithUnit(0, MeasureUnit.Pixel), new NumberWithUnit(0, MeasureUnit.Pixel), new NumberWithUnit(0, MeasureUnit.Pixel));
     }
+    constructor(left, right, top, bottom) {
+        super();
+        this._left = left;
+        this._right = right;
+        this._top = top;
+        this._bottom = bottom;
+    }
 }
-__decorate$5([
+__decorate$6([
     nameForSerialization('left')
 ], MarginsWithUnit.prototype, "_left", void 0);
-__decorate$5([
+__decorate$6([
     nameForSerialization('right')
 ], MarginsWithUnit.prototype, "_right", void 0);
-__decorate$5([
+__decorate$6([
     nameForSerialization('top')
 ], MarginsWithUnit.prototype, "_top", void 0);
-__decorate$5([
+__decorate$6([
     nameForSerialization('bottom')
 ], MarginsWithUnit.prototype, "_bottom", void 0);
 class Color {
-    constructor(hex) {
-        this.hexadecimalString = hex;
-    }
     get redComponent() {
         return this.hexadecimalString.slice(0, 2);
     }
@@ -547,6 +544,9 @@ class Color {
         }
         return alpha;
     }
+    constructor(hex) {
+        this.hexadecimalString = hex;
+    }
     withAlpha(alpha) {
         const newHex = this.hexadecimalString.slice(0, 6) + Color.numberToHex(Color.normalizeAlpha(alpha));
         return Color.fromHex(newHex);
@@ -583,7 +583,7 @@ var LogoStyle;
     LogoStyle["Extended"] = "extended";
 })(LogoStyle || (LogoStyle = {}));
 
-var __decorate$4 = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
+var __decorate$5 = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
@@ -606,11 +606,6 @@ var LaserlineViewfinderStyle;
     LaserlineViewfinderStyle["Animated"] = "animated";
 })(LaserlineViewfinderStyle || (LaserlineViewfinderStyle = {}));
 class RectangularViewfinderAnimation extends DefaultSerializeable {
-    constructor(isLooping) {
-        super();
-        this._isLooping = false;
-        this._isLooping = isLooping;
-    }
     static fromJSON(json) {
         if (json === null) {
             return null;
@@ -620,8 +615,13 @@ class RectangularViewfinderAnimation extends DefaultSerializeable {
     get isLooping() {
         return this._isLooping;
     }
+    constructor(isLooping) {
+        super();
+        this._isLooping = false;
+        this._isLooping = isLooping;
+    }
 }
-__decorate$4([
+__decorate$5([
     nameForSerialization('isLooping')
 ], RectangularViewfinderAnimation.prototype, "_isLooping", void 0);
 
@@ -655,6 +655,12 @@ const Capacitor$1 = {
     exec: (success, error, functionName, args) => capacitorExec(success, error, pluginName$1, functionName, args),
 };
 
+var __decorate$4 = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
 var FrameSourceState;
 (function (FrameSourceState) {
     FrameSourceState["On"] = "on";
@@ -704,23 +710,6 @@ var PrivateCameraProperty;
     PrivateCameraProperty["CameraAPI"] = "api";
 })(PrivateCameraProperty || (PrivateCameraProperty = {}));
 class CameraSettings extends DefaultSerializeable {
-    constructor(settings) {
-        super();
-        this.preferredResolution = Capacitor$1.defaults.Camera.Settings.preferredResolution;
-        this.zoomFactor = Capacitor$1.defaults.Camera.Settings.zoomFactor;
-        this.zoomGestureZoomFactor = Capacitor$1.defaults.Camera.Settings.zoomGestureZoomFactor;
-        this.api = 0;
-        this.focus = {
-            range: Capacitor$1.defaults.Camera.Settings.focusRange,
-            focusGestureStrategy: Capacitor$1.defaults.Camera.Settings.focusGestureStrategy,
-            shouldPreferSmoothAutoFocus: Capacitor$1.defaults.Camera.Settings.shouldPreferSmoothAutoFocus,
-        };
-        if (settings !== undefined && settings !== null) {
-            Object.getOwnPropertyNames(settings).forEach(propertyName => {
-                this[propertyName] = settings[propertyName];
-            });
-        }
-    }
     get focusRange() {
         return this.focus.range;
     }
@@ -747,45 +736,81 @@ class CameraSettings extends DefaultSerializeable {
         settings.zoomGestureZoomFactor = json.zoomGestureZoomFactor;
         settings.focusGestureStrategy = json.focusGestureStrategy;
         settings.shouldPreferSmoothAutoFocus = json.shouldPreferSmoothAutoFocus;
-        if (json.api !== undefined && json.api !== null) {
-            settings.api = json.api;
+        if (json.properties != undefined) {
+            for (const key of Object.keys(json.properties)) {
+                settings.setProperty(key, json.properties[key]);
+            }
         }
         return settings;
     }
+    constructor(settings) {
+        super();
+        this.focusHiddenProperties = [
+            'range',
+            'manualLensPosition',
+            'shouldPreferSmoothAutoFocus',
+            'focusStrategy',
+            'focusGestureStrategy'
+        ];
+        this.preferredResolution = Capacitor$1.defaults.Camera.Settings.preferredResolution;
+        this.zoomFactor = Capacitor$1.defaults.Camera.Settings.zoomFactor;
+        this.zoomGestureZoomFactor = Capacitor$1.defaults.Camera.Settings.zoomGestureZoomFactor;
+        this.api = 0;
+        this.focus = {
+            range: Capacitor$1.defaults.Camera.Settings.focusRange,
+            focusGestureStrategy: Capacitor$1.defaults.Camera.Settings.focusGestureStrategy,
+            shouldPreferSmoothAutoFocus: Capacitor$1.defaults.Camera.Settings.shouldPreferSmoothAutoFocus,
+        };
+        if (settings !== undefined && settings !== null) {
+            Object.getOwnPropertyNames(settings).forEach(propertyName => {
+                this[propertyName] = settings[propertyName];
+            });
+        }
+    }
     setProperty(name, value) {
+        if (this.focusHiddenProperties.includes(name)) {
+            this.focus[name] = value;
+            return;
+        }
         this[name] = value;
     }
     getProperty(name) {
+        if (this.focusHiddenProperties.includes(name)) {
+            return this.focus[name];
+        }
         return this[name];
     }
 }
+__decorate$4([
+    ignoreFromSerialization
+], CameraSettings.prototype, "focusHiddenProperties", void 0);
 
 const defaultsFromJSON = (json) => {
     return {
         IdCapture: {
             RecommendedCameraSettings: CameraSettings
-                .fromJSON(json.IdCapture.RecommendedCameraSettings),
+                .fromJSON(json.RecommendedCameraSettings),
             IdCaptureOverlayDefaults: {
                 defaultCapturedBrush: {
                     fillColor: Color
-                        .fromJSON(json.IdCapture.IdCaptureOverlayDefaults.defaultCapturedBrush.fillColor),
+                        .fromJSON(json.IdCaptureOverlay.DefaultCapturedBrush.fillColor),
                     strokeColor: Color
-                        .fromJSON(json.IdCapture.IdCaptureOverlayDefaults.defaultCapturedBrush.strokeColor),
-                    strokeWidth: json.IdCapture.IdCaptureOverlayDefaults.defaultCapturedBrush.strokeWidth,
+                        .fromJSON(json.IdCaptureOverlay.DefaultCapturedBrush.strokeColor),
+                    strokeWidth: json.IdCaptureOverlay.DefaultCapturedBrush.strokeWidth,
                 },
                 defaultLocalizedBrush: {
                     fillColor: Color
-                        .fromJSON(json.IdCapture.IdCaptureOverlayDefaults.defaultLocalizedBrush.fillColor),
+                        .fromJSON(json.IdCaptureOverlay.DefaultLocalizedBrush.fillColor),
                     strokeColor: Color
-                        .fromJSON(json.IdCapture.IdCaptureOverlayDefaults.defaultLocalizedBrush.strokeColor),
-                    strokeWidth: json.IdCapture.IdCaptureOverlayDefaults.defaultLocalizedBrush.strokeWidth,
+                        .fromJSON(json.IdCaptureOverlay.DefaultLocalizedBrush.strokeColor),
+                    strokeWidth: json.IdCaptureOverlay.DefaultLocalizedBrush.strokeWidth,
                 },
                 defaultRejectedBrush: {
                     fillColor: Color
-                        .fromJSON(json.IdCapture.IdCaptureOverlayDefaults.defaultRejectedBrush.fillColor),
+                        .fromJSON(json.IdCaptureOverlay.DefaultRejectedBrush.fillColor),
                     strokeColor: Color
-                        .fromJSON(json.IdCapture.IdCaptureOverlayDefaults.defaultRejectedBrush.strokeColor),
-                    strokeWidth: json.IdCapture.IdCaptureOverlayDefaults.defaultRejectedBrush.strokeWidth,
+                        .fromJSON(json.IdCaptureOverlay.DefaultRejectedBrush.strokeColor),
+                    strokeWidth: json.IdCaptureOverlay.DefaultRejectedBrush.strokeWidth,
                 },
             },
         },
@@ -1296,13 +1321,14 @@ class AamvaVizBarcodeComparisonVerifier {
         return new Promise((resolve, reject) => {
             this.proxy
                 .verifyCapturedId(JSON.stringify(capturedId))
-                .then((json) => {
-                if (!json) {
-                    resolve();
+                .then((result) => {
+                if (!result.data) {
+                    resolve(AamvaVizBarcodeComparisonResult
+                        .fromJSON(JSON.parse(('{}'))));
                 }
                 else {
                     resolve(AamvaVizBarcodeComparisonResult
-                        .fromJSON(JSON.parse(json.result)));
+                        .fromJSON(JSON.parse(result.data)));
                 }
             }, reject);
         });
@@ -1439,11 +1465,6 @@ var __decorate$2 = (undefined && undefined.__decorate) || function (decorators, 
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 class Brush extends DefaultSerializeable {
-    constructor(fillColor = Capacitor$1.defaults.Brush.fillColor, strokeColor = Capacitor$1.defaults.Brush.strokeColor, strokeWidth = Capacitor$1.defaults.Brush.strokeWidth) {
-        super();
-        this.fill = { color: fillColor };
-        this.stroke = { color: strokeColor, width: strokeWidth };
-    }
     static get transparent() {
         const transparentBlack = Color.fromRGBA(255, 255, 255, 0);
         return new Brush(transparentBlack, transparentBlack, 0);
@@ -1456,6 +1477,11 @@ class Brush extends DefaultSerializeable {
     }
     get strokeWidth() {
         return this.stroke.width;
+    }
+    constructor(fillColor = Capacitor$1.defaults.Brush.fillColor, strokeColor = Capacitor$1.defaults.Brush.strokeColor, strokeWidth = Capacitor$1.defaults.Brush.strokeWidth) {
+        super();
+        this.fill = { color: fillColor };
+        this.stroke = { color: strokeColor, width: strokeWidth };
     }
 }
 class LaserlineViewfinder extends DefaultSerializeable {
@@ -1476,6 +1502,9 @@ __decorate$2([
     nameForSerialization('style')
 ], LaserlineViewfinder.prototype, "_style", void 0);
 class RectangularViewfinder extends DefaultSerializeable {
+    get sizeWithUnitAndAspect() {
+        return this._sizeWithUnitAndAspect;
+    }
     constructor(style, lineStyle) {
         super();
         this.type = 'rectangular';
@@ -1491,9 +1520,6 @@ class RectangularViewfinder extends DefaultSerializeable {
         if (lineStyle !== undefined) {
             this._lineStyle = lineStyle;
         }
-    }
-    get sizeWithUnitAndAspect() {
-        return this._sizeWithUnitAndAspect;
     }
     get style() {
         return this._style;
@@ -1602,6 +1628,17 @@ class IdCaptureSession {
     }
 }
 class IdCaptureOverlay extends DefaultSerializeable {
+    static withIdCapture(idCapture) {
+        return IdCaptureOverlay.withIdCaptureForView(idCapture, null);
+    }
+    static withIdCaptureForView(idCapture, view) {
+        const overlay = new IdCaptureOverlay();
+        overlay.idCapture = idCapture;
+        if (view) {
+            view.addOverlay(overlay);
+        }
+        return overlay;
+    }
     constructor() {
         super();
         this.type = 'idCapture';
@@ -1614,17 +1651,6 @@ class IdCaptureOverlay extends DefaultSerializeable {
         this._localizedBrush = this._defaultLocalizedBrush;
         this._rejectedBrush = this._defaultRejectedBrush;
         this._idLayoutLineStyle = IdLayoutLineStyle.Light;
-    }
-    static withIdCapture(idCapture) {
-        return IdCaptureOverlay.withIdCaptureForView(idCapture, null);
-    }
-    static withIdCaptureForView(idCapture, view) {
-        const overlay = new IdCaptureOverlay();
-        overlay.idCapture = idCapture;
-        if (view) {
-            view.addOverlay(overlay);
-        }
-        return overlay;
     }
     setIdLayout(idLayout) {
         this._idLayout = idLayout;
@@ -1699,9 +1725,9 @@ __decorate$1([
 
 var IdCaptureListenerEvent;
 (function (IdCaptureListenerEvent) {
-    IdCaptureListenerEvent["DidCapture"] = "didCaptureInIdCapture";
-    IdCaptureListenerEvent["DidLocalize"] = "didLocalizeInIdCapture";
-    IdCaptureListenerEvent["DidReject"] = "didRejectInIdCapture";
+    IdCaptureListenerEvent["DidCapture"] = "IdCaptureListener.didCaptureId";
+    IdCaptureListenerEvent["DidLocalize"] = "IdCaptureListener.didLocalizeId";
+    IdCaptureListenerEvent["DidReject"] = "IdCaptureListener.didRejectId";
 })(IdCaptureListenerEvent || (IdCaptureListenerEvent = {}));
 class IdCaptureListenerProxy {
     static forIdCapture(idCapture) {

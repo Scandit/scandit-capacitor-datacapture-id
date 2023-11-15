@@ -7,32 +7,29 @@
 import ScanditIdCapture
 import ScanditCapacitorDatacaptureCore
 
-struct ScanditIdCaptureDefaults: Encodable {
-    typealias CameraSettingsDefaults = ScanditCaptureCoreDefaults.CameraSettingsDefaults
+fileprivate typealias IdCaptureOverlayClass = IdCaptureOverlay
 
+struct ScanditIdCaptureDefaults: Encodable {
     struct IdCaptureDefaultsContainer: Encodable {
         let RecommendedCameraSettings: CameraSettingsDefaults
-        let IdCaptureOverlayDefaults: [String: ScanditCaptureCoreDefaults.BrushDefaults]
+        let IdCaptureOverlay: [String: BrushDefaults]
     }
-
-    let IdCapture = IdCaptureDefaultsContainer()
+    static let defaults = IdCaptureDefaultsContainer()
 }
 
 extension ScanditIdCaptureDefaults.IdCaptureDefaultsContainer {
-    typealias BrushDefaults = ScanditCaptureCoreDefaults.BrushDefaults
 
     init() {
-        self.RecommendedCameraSettings = ScanditCaptureCoreDefaults.CameraSettingsDefaults
-            .from(IdCapture.recommendedCameraSettings)
-        self.IdCaptureOverlayDefaults = [
-            "defaultCapturedBrush": BrushDefaults.from(
-                IdCaptureOverlay.defaultCapturedBrush
+        self.RecommendedCameraSettings = CameraSettingsDefaults.from(IdCapture.recommendedCameraSettings)
+        self.IdCaptureOverlay = [
+            "DefaultCapturedBrush": BrushDefaults.from(
+                IdCaptureOverlayClass.defaultCapturedBrush
             ),
-            "defaultLocalizedBrush": BrushDefaults.from(
-                IdCaptureOverlay.defaultLocalizedBrush
+            "DefaultLocalizedBrush": BrushDefaults.from(
+                IdCaptureOverlayClass.defaultLocalizedBrush
             ),
-            "defaultRejectedBrush": BrushDefaults.from(
-                IdCaptureOverlay.defaultRejectedBrush
+            "DefaultRejectedBrush": BrushDefaults.from(
+                IdCaptureOverlayClass.defaultRejectedBrush
             ),
         ]
     }

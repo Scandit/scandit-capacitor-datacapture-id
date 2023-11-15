@@ -456,13 +456,14 @@ export class AamvaVizBarcodeComparisonVerifier {
         return new Promise((resolve, reject) => {
             this.proxy
                 .verifyCapturedId(JSON.stringify(capturedId))
-                .then((json) => {
-                if (!json) {
-                    resolve();
+                .then((result) => {
+                if (!result.data) {
+                    resolve(AamvaVizBarcodeComparisonResult
+                        .fromJSON(JSON.parse(('{}'))));
                 }
                 else {
                     resolve(AamvaVizBarcodeComparisonResult
-                        .fromJSON(JSON.parse(json.result)));
+                        .fromJSON(JSON.parse(result.data)));
                 }
             }, reject);
         });

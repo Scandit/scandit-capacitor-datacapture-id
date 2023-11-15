@@ -4,28 +4,28 @@ export const defaultsFromJSON = (json) => {
     return {
         IdCapture: {
             RecommendedCameraSettings: CameraSettings
-                .fromJSON(json.IdCapture.RecommendedCameraSettings),
+                .fromJSON(json.RecommendedCameraSettings),
             IdCaptureOverlayDefaults: {
                 defaultCapturedBrush: {
                     fillColor: Color
-                        .fromJSON(json.IdCapture.IdCaptureOverlayDefaults.defaultCapturedBrush.fillColor),
+                        .fromJSON(json.IdCaptureOverlay.DefaultCapturedBrush.fillColor),
                     strokeColor: Color
-                        .fromJSON(json.IdCapture.IdCaptureOverlayDefaults.defaultCapturedBrush.strokeColor),
-                    strokeWidth: json.IdCapture.IdCaptureOverlayDefaults.defaultCapturedBrush.strokeWidth,
+                        .fromJSON(json.IdCaptureOverlay.DefaultCapturedBrush.strokeColor),
+                    strokeWidth: json.IdCaptureOverlay.DefaultCapturedBrush.strokeWidth,
                 },
                 defaultLocalizedBrush: {
                     fillColor: Color
-                        .fromJSON(json.IdCapture.IdCaptureOverlayDefaults.defaultLocalizedBrush.fillColor),
+                        .fromJSON(json.IdCaptureOverlay.DefaultLocalizedBrush.fillColor),
                     strokeColor: Color
-                        .fromJSON(json.IdCapture.IdCaptureOverlayDefaults.defaultLocalizedBrush.strokeColor),
-                    strokeWidth: json.IdCapture.IdCaptureOverlayDefaults.defaultLocalizedBrush.strokeWidth,
+                        .fromJSON(json.IdCaptureOverlay.DefaultLocalizedBrush.strokeColor),
+                    strokeWidth: json.IdCaptureOverlay.DefaultLocalizedBrush.strokeWidth,
                 },
                 defaultRejectedBrush: {
                     fillColor: Color
-                        .fromJSON(json.IdCapture.IdCaptureOverlayDefaults.defaultRejectedBrush.fillColor),
+                        .fromJSON(json.IdCaptureOverlay.DefaultRejectedBrush.fillColor),
                     strokeColor: Color
-                        .fromJSON(json.IdCapture.IdCaptureOverlayDefaults.defaultRejectedBrush.strokeColor),
-                    strokeWidth: json.IdCapture.IdCaptureOverlayDefaults.defaultRejectedBrush.strokeWidth,
+                        .fromJSON(json.IdCaptureOverlay.DefaultRejectedBrush.strokeColor),
+                    strokeWidth: json.IdCaptureOverlay.DefaultRejectedBrush.strokeWidth,
                 },
             },
         },
