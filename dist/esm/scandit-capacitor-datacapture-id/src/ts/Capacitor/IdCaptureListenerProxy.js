@@ -48,19 +48,19 @@ export class IdCaptureListenerProxy {
                 case IdCaptureListenerEvent.DidCapture:
                     if (listener.didCaptureId) {
                         listener.didCaptureId(this.idCapture, IdCaptureSession
-                            .fromJSON(JSON.parse(event.argument.session)));
+                            .fromJSON(JSON.parse(event.session)));
                     }
                     break;
                 case IdCaptureListenerEvent.DidLocalize:
                     if (listener.didLocalizeId) {
                         listener.didLocalizeId(this.idCapture, IdCaptureSession
-                            .fromJSON(JSON.parse(event.argument.session)));
+                            .fromJSON(JSON.parse(event.session)));
                     }
                     break;
                 case IdCaptureListenerEvent.DidReject:
                     if (listener.didRejectId) {
                         listener.didRejectId(this.idCapture, IdCaptureSession
-                            .fromJSON(JSON.parse(event.argument.session)));
+                            .fromJSON(JSON.parse(event.session)));
                     }
                     break;
             }
