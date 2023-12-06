@@ -18,10 +18,7 @@ export class IdCaptureProxy {
     private idCapture;
     static forIdCapture(idCapture: IdCapture): IdCaptureProxy;
     reset(): Promise<void>;
-    verifyCapturedId(capturedId: string): Promise<VerificationResult>;
-}
-export interface VerificationResult {
-    data: any | null;
+    verifyCapturedId(capturedId: string): Promise<string | null>;
 }
 
 
@@ -113,7 +110,7 @@ export interface AAMVABarcodeResultJSON {
     vehicleClass: string | null;
     weightKg: number | null;
     weightLbs: number | null;
-    dictionary: {
+    barcodeDataElements: {
         [key: string]: string;
     };
 }
@@ -699,10 +696,6 @@ export interface IdCaptureListener {
     didCaptureId?(idCapture: IdCapture, session: IdCaptureSession): void;
     didLocalizeId?(idCapture: IdCapture, session: IdCaptureSession): void;
     didRejectId?(idCapture: IdCapture, session: IdCaptureSession): void;
-    /**
-     * @deprecated This method is no longer executed by the listener.
-     * See didRejectId for scenarios previously reported by this callback.
-     */
     didFailWithError?(idCapture: IdCapture, error: IdCaptureError, session: IdCaptureSession): void;
 }
 export class IdCaptureOverlay implements DataCaptureOverlay {
@@ -830,15 +823,12 @@ export interface CameraSettingsJSON {
     zoomGestureZoomFactor: number;
     focusGestureStrategy: string;
     shouldPreferSmoothAutoFocus: boolean;
-    properties: {
-        [key: string]: any;
-    };
+    api: number;
 }
 interface PrivateCameraSettings {
     fromJSON(json: CameraSettingsJSON): CameraSettings;
 }
 export class CameraSettings {
-    private focusHiddenProperties;
     preferredResolution: VideoResolution;
     zoomFactor: number;
     zoomGestureZoomFactor: number;
@@ -912,8 +902,6 @@ export class DataCaptureViewProxy {
     viewPointForFramePoint(point: Point): Promise<Point>;
     viewQuadrilateralForFrameQuadrilateral(quadrilateral: Quadrilateral): Promise<Quadrilateral>;
     private subscribeListener;
-    unregisterListenerForViewEvents(): void;
-    subscribeDidChangeSize(): void;
     private notifyListeners;
     private initialize;
 }
@@ -1086,8 +1074,7 @@ export class MarginsWithUnit {
     private static fromJSON;
     private static get zero();
     constructor(left: NumberWithUnit, right: NumberWithUnit, top: NumberWithUnit, bottom: NumberWithUnit);
-}
-type ColorJSON = string;
+} type ColorJSON = string;
 interface PrivateColor {
     fromJSON(json: ColorJSON): Color;
 }

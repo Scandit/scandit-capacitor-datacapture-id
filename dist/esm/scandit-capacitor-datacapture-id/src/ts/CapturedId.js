@@ -222,7 +222,7 @@ export class AAMVABarcodeResult {
         return DateResult.fromJSON(this.json.cardRevisionDate);
     }
     get documentDiscriminatorNumber() { return this.json.documentDiscriminatorNumber; }
-    get barcodeDataElements() { return this.json.dictionary; }
+    get barcodeDataElements() { return this.json.barcodeDataElements; }
     static fromJSON(json) {
         const result = new AAMVABarcodeResult();
         result.json = json;
@@ -456,14 +456,13 @@ export class AamvaVizBarcodeComparisonVerifier {
         return new Promise((resolve, reject) => {
             this.proxy
                 .verifyCapturedId(JSON.stringify(capturedId))
-                .then((result) => {
-                if (!result.data) {
-                    resolve(AamvaVizBarcodeComparisonResult
-                        .fromJSON(JSON.parse(('{}'))));
+                .then((json) => {
+                if (!json) {
+                    resolve();
                 }
                 else {
                     resolve(AamvaVizBarcodeComparisonResult
-                        .fromJSON(JSON.parse(result.data)));
+                        .fromJSON(JSON.parse(json.result)));
                 }
             }, reject);
         });

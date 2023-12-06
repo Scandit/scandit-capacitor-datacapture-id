@@ -2,9 +2,10 @@ import { IdCaptureSession } from '../IdCapture+Related';
 import { Capacitor, CapacitorFunction } from './Capacitor';
 var IdCaptureListenerEvent;
 (function (IdCaptureListenerEvent) {
-    IdCaptureListenerEvent["DidCapture"] = "IdCaptureListener.didCaptureId";
-    IdCaptureListenerEvent["DidLocalize"] = "IdCaptureListener.didLocalizeId";
-    IdCaptureListenerEvent["DidReject"] = "IdCaptureListener.didRejectId";
+    IdCaptureListenerEvent["DidCapture"] = "didCaptureInIdCapture";
+    IdCaptureListenerEvent["DidLocalize"] = "didLocalizeInIdCapture";
+    IdCaptureListenerEvent["DidReject"] = "didRejectInIdCapture";
+    IdCaptureListenerEvent["DidFail"] = "didFailInIdCapture";
 })(IdCaptureListenerEvent || (IdCaptureListenerEvent = {}));
 export class IdCaptureListenerProxy {
     static forIdCapture(idCapture) {
@@ -20,6 +21,8 @@ export class IdCaptureListenerProxy {
         window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.SubscribeIdCaptureListener]();
         window.Capacitor.Plugins[Capacitor.pluginName]
             .addListener(IdCaptureListenerEvent.DidCapture, this.notifyListeners.bind(this));
+        window.Capacitor.Plugins[Capacitor.pluginName]
+            .addListener(IdCaptureListenerEvent.DidFail, this.notifyListeners.bind(this));
         window.Capacitor.Plugins[Capacitor.pluginName]
             .addListener(IdCaptureListenerEvent.DidLocalize, this.notifyListeners.bind(this));
         window.Capacitor.Plugins[Capacitor.pluginName]
@@ -48,21 +51,27 @@ export class IdCaptureListenerProxy {
                 case IdCaptureListenerEvent.DidCapture:
                     if (listener.didCaptureId) {
                         listener.didCaptureId(this.idCapture, IdCaptureSession
-                            .fromJSON(JSON.parse(event.session)));
+                            .fromJSON(JSON.parse(event.argument.session)));
                     }
                     break;
                 case IdCaptureListenerEvent.DidLocalize:
                     if (listener.didLocalizeId) {
                         listener.didLocalizeId(this.idCapture, IdCaptureSession
-                            .fromJSON(JSON.parse(event.session)));
+                            .fromJSON(JSON.parse(event.argument.session)));
                     }
                     break;
                 case IdCaptureListenerEvent.DidReject:
                     if (listener.didRejectId) {
                         listener.didRejectId(this.idCapture, IdCaptureSession
-                            .fromJSON(JSON.parse(event.session)));
+                            .fromJSON(JSON.parse(event.argument.session)));
                     }
                     break;
+                case IdCaptureListenerEvent.DidFail:
+                    if (listener.didFailWithError) {
+                        const session = IdCaptureSession
+                            .fromJSON(JSON.parse(event.argument.session));
+                        listener.didFailWithError(this.idCapture, session._error, session);
+                    }
             }
         });
         return done();

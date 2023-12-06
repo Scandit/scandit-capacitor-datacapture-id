@@ -53,17 +53,6 @@ export class IdCaptureSession {
     }
 }
 export class IdCaptureOverlay extends DefaultSerializeable {
-    static withIdCapture(idCapture) {
-        return IdCaptureOverlay.withIdCaptureForView(idCapture, null);
-    }
-    static withIdCaptureForView(idCapture, view) {
-        const overlay = new IdCaptureOverlay();
-        overlay.idCapture = idCapture;
-        if (view) {
-            view.addOverlay(overlay);
-        }
-        return overlay;
-    }
     constructor() {
         super();
         this.type = 'idCapture';
@@ -76,6 +65,17 @@ export class IdCaptureOverlay extends DefaultSerializeable {
         this._localizedBrush = this._defaultLocalizedBrush;
         this._rejectedBrush = this._defaultRejectedBrush;
         this._idLayoutLineStyle = IdLayoutLineStyle.Light;
+    }
+    static withIdCapture(idCapture) {
+        return IdCaptureOverlay.withIdCaptureForView(idCapture, null);
+    }
+    static withIdCaptureForView(idCapture, view) {
+        const overlay = new IdCaptureOverlay();
+        overlay.idCapture = idCapture;
+        if (view) {
+            view.addOverlay(overlay);
+        }
+        return overlay;
     }
     setIdLayout(idLayout) {
         this._idLayout = idLayout;
