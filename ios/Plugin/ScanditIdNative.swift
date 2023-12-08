@@ -4,11 +4,10 @@
  * Copyright (C) 2023- Scandit AG. All rights reserved.
  */
 
-import Foundation
 import Capacitor
-import ScanditCaptureCore
+import Foundation
 import ScanditCapacitorDatacaptureCore
-import ScanditIdCapture
+import ScanditFrameworksId
 
 class IdCaptureCallbacks {
     var idCaptureListener: Callback?
@@ -36,34 +35,23 @@ struct IdCaptureCallbackResult: BlockingListenerCallbackResult {
 }
 
 @objc(ScanditIdNative)
-public class ScanditIdNative: CAPPlugin, DataCapturePlugin {
-
-    lazy public var modeDeserializers: [DataCaptureModeDeserializer] = {
-            let idCaptureDeserializer = IdCaptureDeserializer()
-            idCaptureDeserializer.delegate = self
-            return [idCaptureDeserializer]
-    }()
-
-    lazy public var componentDeserializers: [DataCaptureComponentDeserializer] = []
-    lazy public var components: [DataCaptureComponent] = []
-
+public class ScanditIdNative: CAPPlugin {
+    var idModule: IdCaptureModule!
     lazy var callbacks = IdCaptureCallbacks()
-    lazy var callbackLocks = CallbackLocks()
-
-    var idCapture: IdCapture?
-    var idCaptureSession: IdCaptureSession?
 
     override public func load() {
-        ScanditCaptureCore.dataCapturePlugins.append(self as DataCapturePlugin)
+        let emitter = CapacitorEventEmitter(with: self)
+        let idCaptureListener = FrameworksIdCaptureListener(emitter: emitter)
+        idModule = IdCaptureModule(idCaptureListener: idCaptureListener)
+        idModule.didStart()
+        idModule.addListener()
+    }
+
+    func onReset() {
+        idModule.didStop()
     }
 
     // MARK: Listeners
-
-    @objc(subscribeIdCaptureListener:)
-    func subscribeIdCaptureListener(_ call: CAPPluginCall) {
-        callbacks.idCaptureListener = Callback(id: call.callbackId)
-        call.resolve()
-    }
 
     @objc(finishCallback:)
     func finishCallback(_ call: CAPPluginCall) {
@@ -83,8 +71,18 @@ public class ScanditIdNative: CAPPlugin, DataCapturePlugin {
             call.reject(CommandError.invalidJSON.toJSONString())
             return
         }
-        callbackLocks.setResult(result, for: result.finishCallbackID)
-        callbackLocks.release(for: result.finishCallbackID)
+        let enabled = result.enabled ?? false
+        if result.isForListenerEvent(.didLocalizeInIdCapture) {
+            idModule.finishDidLocalizeId(enabled: enabled)
+        } else if result.isForListenerEvent(.didCaptureInIdCapture) {
+            idModule.finishDidCaptureId(enabled: enabled)
+        } else if result.isForListenerEvent(.didRejectInIdCapture) {
+            idModule.finishDidRejectId(enabled: enabled)
+        } else if result.isForListenerEvent(.didTimoutInIdCapture) {
+            idModule.finishTimeout(enabled: enabled)
+        } else {
+            call.reject("Invalid 'finishCallbackId' for IdCapture: \(result.finishCallbackID.rawValue)")
+        }
         call.resolve()
     }
 
@@ -94,66 +92,43 @@ public class ScanditIdNative: CAPPlugin, DataCapturePlugin {
             call.reject(CommandError.invalidJSON.toJSONString())
             return
         }
-        guard let capturedId = try? CapturedId(jsonString: jsonString) else {
-            call.resolve()
-            return
-        }
-        let result = AAMVAVizBarcodeComparisonVerifier.init().verify(capturedId).jsonString
-        call.resolve([
-            "result": result
-        ])
+        idModule.verifyCapturedIdAamvaViz(jsonString: jsonString,
+                                          result: CapacitorResult(call))
     }
 
-    func waitForFinished(_ listenerEvent: ListenerEvent, callbackId: String) {
-        callbackLocks.wait(for: listenerEvent.name, afterDoing: {
-            self.notifyListeners(listenerEvent.name.rawValue, data: listenerEvent.resultMessage as? [String: Any])
-        })
-    }
-
-    func finishBlockingCallback(with mode: DataCaptureMode, for listenerEvent: ListenerEvent) {
-        defer {
-            callbackLocks.clearResult(for: listenerEvent.name)
-        }
-
-        guard let result = callbackLocks.getResult(for: listenerEvent.name) as? IdCaptureCallbackResult,
-            let enabled = result.enabled else {
+    @objc(verifyCapturedIdAsync:)
+    func verifyCapturedIdAsync(_ call: CAPPluginCall) {
+        guard let jsonString = call.options["capturedId"] as! String? else {
+            call.reject(CommandError.invalidJSON.toJSONString())
             return
         }
+        idModule.verifyCapturedIdWithCloud(jsonString: jsonString,
+                                          result: CapacitorResult(call))
+    }
 
-        if enabled != mode.isEnabled {
-            mode.isEnabled = enabled
-        }
+    @objc(createContextForBarcodeVerification:)
+    func createContextForBarcodeVerification(_ call: CAPPluginCall) {
+        idModule.createAamvaBarcodeVerifier(result: CapacitorResult(call))
     }
 
     // MARK: Defaults
 
     @objc(getDefaults:)
     func getDefaults(_ call: CAPPluginCall) {
-        DispatchQueue.main.async {
-            let defaults = ScanditIdCaptureDefaults()
-
-            var defaultsDictionary: [String: Any]? {
-                    guard let data = try? JSONEncoder().encode(defaults) else {
-                        return nil
-                    }
-                    guard let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else
-                    {
-                        return nil
-                    }
-                    return json
-                }
-
-            call.resolve(defaultsDictionary ?? [:])
-        }
+        call.resolve(idModule.defaults.toEncodable() as PluginCallResultData)
     }
 
     // MARK: Reset
 
     @objc(resetIdCapture:)
     func resetIdCapture(_ call: CAPPluginCall) {
-        if let idCapture = idCapture {
-            idCapture.reset()
-        }
+        idModule.resetMode()
+        call.resolve()
+    }
+
+    @objc(setModeEnabledState:)
+    func setModeEnabledState(_ call: CAPPluginCall) {
+        idModule.setModeEnabled(enabled: call.getBool("enabled", false))
         call.resolve()
     }
 }
