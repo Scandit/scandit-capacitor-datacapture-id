@@ -12,8 +12,6 @@
 CAP_PLUGIN(ScanditIdNative, "ScanditIdNative",
            CAP_PLUGIN_METHOD(getDefaults, CAPPluginReturnPromise);
            CAP_PLUGIN_METHOD(verifyCapturedId, CAPPluginReturnPromise);
+           CAP_PLUGIN_METHOD(subscribeIdCaptureListener, CAPPluginReturnPromise);
            CAP_PLUGIN_METHOD(resetIdCapture, CAPPluginReturnPromise);
-           CAP_PLUGIN_METHOD(finishCallback, CAPPluginReturnPromise);
-           CAP_PLUGIN_METHOD(verifyCapturedIdAsync, CAPPluginReturnPromise);
-           CAP_PLUGIN_METHOD(createContextForBarcodeVerification, CAPPluginReturnPromise);
-           CAP_PLUGIN_METHOD(setModeEnabledState, CAPPluginReturnPromise);)
+           CAP_PLUGIN_METHOD(finishCallback, CAPPluginReturnPromise);)
