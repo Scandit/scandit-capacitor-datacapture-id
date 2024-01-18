@@ -43,7 +43,6 @@ class ScanditIdNative : Plugin(), Emitter {
         }
 
         idCaptureModule.onCreate(bridge.context)
-        idCaptureModule.addListener()
     }
 
     override fun handleOnStart() {
@@ -77,31 +76,14 @@ class ScanditIdNative : Plugin(), Emitter {
     }
 
     @PluginMethod
-    fun resetIdCapture(call: PluginCall) {
-        idCaptureModule.resetMode()
+    fun subscribeIdCaptureListener(call: PluginCall) {
+        idCaptureModule.addListener()
         call.resolve()
     }
 
     @PluginMethod
-    fun verifyCapturedIdAsync(call: PluginCall) {
-        try {
-            val capturedIdJson = call.data.getString("capturedId")
-                ?: return call.reject("Request doesn't contain the captureId")
-
-            idCaptureModule.verifyCapturedIdBarcode(capturedIdJson, CapacitorResult(call))
-        } catch (e: Exception) {
-            call.reject(JsonParseError(e.message).toString())
-        }
-    }
-
-    @PluginMethod
-    fun createContextForBarcodeVerification(call: PluginCall) {
-        idCaptureModule.createContextForBarcodeVerification(CapacitorResult(call))
-    }
-
-    @PluginMethod
-    fun setModeEnabledState(call: PluginCall) {
-        idCaptureModule.setModeEnabled(call.data.getBoolean("enabled"))
+    fun resetIdCapture(call: PluginCall) {
+        idCaptureModule.resetMode()
         call.resolve()
     }
 

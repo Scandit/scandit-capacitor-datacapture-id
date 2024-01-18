@@ -44,7 +44,6 @@ public class ScanditIdNative: CAPPlugin {
         let idCaptureListener = FrameworksIdCaptureListener(emitter: emitter)
         idModule = IdCaptureModule(idCaptureListener: idCaptureListener)
         idModule.didStart()
-        idModule.addListener()
     }
 
     func onReset() {
@@ -52,6 +51,12 @@ public class ScanditIdNative: CAPPlugin {
     }
 
     // MARK: Listeners
+
+    @objc(subscribeIdCaptureListener:)
+    func subscribeIdCaptureListener(_ call: CAPPluginCall) {
+        idModule.addListener()
+        call.resolve()
+    }
 
     @objc(finishCallback:)
     func finishCallback(_ call: CAPPluginCall) {
@@ -96,21 +101,6 @@ public class ScanditIdNative: CAPPlugin {
                                           result: CapacitorResult(call))
     }
 
-    @objc(verifyCapturedIdAsync:)
-    func verifyCapturedIdAsync(_ call: CAPPluginCall) {
-        guard let jsonString = call.options["capturedId"] as! String? else {
-            call.reject(CommandError.invalidJSON.toJSONString())
-            return
-        }
-        idModule.verifyCapturedIdWithCloud(jsonString: jsonString,
-                                          result: CapacitorResult(call))
-    }
-
-    @objc(createContextForBarcodeVerification:)
-    func createContextForBarcodeVerification(_ call: CAPPluginCall) {
-        idModule.createAamvaBarcodeVerifier(result: CapacitorResult(call))
-    }
-
     // MARK: Defaults
 
     @objc(getDefaults:)
@@ -123,12 +113,6 @@ public class ScanditIdNative: CAPPlugin {
     @objc(resetIdCapture:)
     func resetIdCapture(_ call: CAPPluginCall) {
         idModule.resetMode()
-        call.resolve()
-    }
-
-    @objc(setModeEnabledState:)
-    func setModeEnabledState(_ call: CAPPluginCall) {
-        idModule.setModeEnabled(enabled: call.getBool("enabled", false))
         call.resolve()
     }
 }
