@@ -143,27 +143,6 @@ class ScanditIdNative : Plugin(), Emitter {
         }
     }
 
-    @PluginMethod
-    fun updateIdCaptureOverlay(call: PluginCall) {
-        val overlayJson = call.data.getString("overlayJson")
-            ?: return call.reject(WRONG_INPUT)
-        idCaptureModule.updateOverlay(overlayJson, CapacitorResult(call))
-    }
-
-    @PluginMethod
-    fun updateIdCaptureMode(call: PluginCall) {
-        val modeJson = call.data.getString("modeJson")
-            ?: return call.reject(WRONG_INPUT)
-        idCaptureModule.updateModeFromJson(modeJson, CapacitorResult(call))
-    }
-
-    @PluginMethod
-    fun applyIdCaptureModeSettings(call: PluginCall) {
-        val modeSettingsJson = call.data.getString("modeSettingsJson")
-            ?: return call.reject(WRONG_INPUT)
-        idCaptureModule.applyModeSettings(modeSettingsJson, CapacitorResult(call))
-    }
-
     override fun emit(eventName: String, payload: MutableMap<String, Any?>) {
         payload[FIELD_EVENT_NAME] = eventName
 
@@ -177,8 +156,7 @@ class ScanditIdNative : Plugin(), Emitter {
         private const val FIELD_RESULT = "result"
         private const val CORE_PLUGIN_NAME = "ScanditCaptureCoreNative"
 
+        private const val FIELD_EVENT_ARGUMENT = "argument"
         private const val FIELD_EVENT_NAME = "name"
-
-        private const val WRONG_INPUT = "Wrong input parameter"
     }
 }

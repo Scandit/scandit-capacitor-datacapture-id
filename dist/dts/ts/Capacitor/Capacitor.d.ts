@@ -1,7 +1,7 @@
-import { IdDefaults } from 'scandit-datacapture-frameworks-id';
+import type { Defaults } from './Defaults';
 export declare const Capacitor: {
     pluginName: string;
-    defaults: IdDefaults;
+    defaults: Defaults;
     exec: (success: Function | null, error: Function | null, functionName: string, args: [any] | null) => void;
 };
 export interface CapacitorWindow extends Window {
@@ -15,9 +15,6 @@ export declare enum CapacitorFunction {
     VerifyCapturedIdAsync = "verifyCapturedIdAsync",
     FinishCallback = "finishCallback",
     CreateContextForBarcodeVerification = "createContextForBarcodeVerification",
-    SetModeEnabledState = "setModeEnabledState",
-    UpdateIdCaptureOverlay = "updateIdCaptureOverlay",
-    UpdateIdCaptureMode = "updateIdCaptureMode",
-    ApplyIdCaptureModeSettings = "applyIdCaptureModeSettings"
+    SetModeEnabledState = "setModeEnabledState"
 }
-export declare const getDefaults: () => Promise<void>;
+export declare const getDefaults: () => Promise<Defaults>;
