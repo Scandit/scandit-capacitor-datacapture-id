@@ -131,4 +131,31 @@ public class ScanditIdNative: CAPPlugin {
         idModule.setModeEnabled(enabled: call.getBool("enabled", false))
         call.resolve()
     }
+
+    @objc(updateIdCaptureOverlay:)
+    func updateIdCaptureOverlay(_ call: CAPPluginCall) {
+        guard let overlayJson = call.getString("overlayJson") else {
+            call.reject(CommandError.invalidJSON.toJSONString())
+            return
+        }
+        idModule.updateOverlay(overlayJson: overlayJson, result: CapacitorResult(call))
+    }
+    
+    @objc(updateIdCaptureMode:)
+    func updateIdCaptureMode(_ call: CAPPluginCall) {
+        guard let modeJson = call.getString("modeJson") else {
+            call.reject(CommandError.invalidJSON.toJSONString())
+            return
+        }
+        idModule.updateModeFromJson(modeJson: modeJson, result: CapacitorResult(call))
+    }
+    
+    @objc(applyIdCaptureModeSettings:)
+    func applyIdCaptureModeSettings(_ call: CAPPluginCall) {
+        guard let modeSettingsJson = call.getString("modeSettingsJson") else {
+            call.reject(CommandError.invalidJSON.toJSONString())
+            return
+        }
+        idModule.applyModeSettings(modeSettingsJson: modeSettingsJson, result: CapacitorResult(call))
+    }
 }
