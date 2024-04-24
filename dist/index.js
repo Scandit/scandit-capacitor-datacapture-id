@@ -1565,6 +1565,11 @@ var DocumentType;
     DocumentType["ImmigrantVisa"] = "immigrantVisa";
     DocumentType["ConsularVoterId"] = "consularVoterId";
     DocumentType["TwicCard"] = "twicCard";
+    DocumentType["ExitEntryPermit"] = "exitEntryPermit";
+    DocumentType["MainlandTravelPermitTaiwan"] = "mainlandTravelPermitTaiwan";
+    DocumentType["NbiClearance"] = "nbiClearance";
+    DocumentType["ProofOfRegistration"] = "proofOfRegistration";
+    DocumentType["TemporaryProtectionPermit"] = "temporaryProtectionPermit";
 })(DocumentType || (DocumentType = {}));
 
 class VizMrzComparisonResult {
