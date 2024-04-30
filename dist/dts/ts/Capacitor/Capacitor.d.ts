@@ -13,7 +13,6 @@ export declare enum CapacitorFunction {
     ResetIdCapture = "resetIdCapture",
     VerifyCapturedId = "verifyCapturedId",
     VerifyCapturedIdAsync = "verifyCapturedIdAsync",
-    VerifyVizMrz = "verifyVizMrz",
     FinishCallback = "finishCallback",
     CreateContextForBarcodeVerification = "createContextForBarcodeVerification",
     SetModeEnabledState = "setModeEnabledState",
