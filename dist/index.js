@@ -559,6 +559,7 @@ class CommonCapturedIdFields {
     get firstName() { return this.json.firstName; }
     get lastName() { return this.json.lastName; }
     get fullName() { return this.json.fullName; }
+    get secondaryLastName() { return this.json.secondaryLastName; }
     get sex() { return this.json.sex; }
     get dateOfBirth() {
         return DateResult.fromJSON(this.json.dateOfBirth);
@@ -585,6 +586,7 @@ class CommonCapturedIdFields {
         const firstName = json.firstName;
         const lastName = json.lastName;
         const fullName = json.fullName;
+        const secondaryLastName = json.secondaryLastName;
         const sex = json.sex;
         const dateOfBirth = DateResult.fromJSON(json.dateOfBirth);
         const age = json.age;
@@ -606,6 +608,9 @@ class CommonCapturedIdFields {
             }
             if (!existingInstance.fullName) {
                 json.fullName = fullName;
+            }
+            if (!existingInstance.secondaryLastName) {
+                json.secondaryLastName = secondaryLastName;
             }
             if (!existingInstance.sex) {
                 json.sex = sex;
@@ -698,6 +703,7 @@ class CapturedId {
     get firstName() { return this.commonCapturedFields.firstName; }
     get lastName() { return this.commonCapturedFields.lastName; }
     get fullName() { return this.commonCapturedFields.fullName; }
+    get secondaryLastName() { return this.commonCapturedFields.secondaryLastName; }
     get sex() { return this.commonCapturedFields.sex; }
     get dateOfBirth() {
         return DateResult.fromJSON(this.commonCapturedFields.dateOfBirth);
