@@ -106,16 +106,6 @@ public class ScanditIdNative: CAPPlugin {
                                           result: CapacitorResult(call))
     }
 
-    @objc(verifyVizMrz:)
-    func verifyVizMrz(_ call: CAPPluginCall) {
-        guard let jsonString = call.options["capturedId"] as! String? else {
-            call.reject(CommandError.invalidJSON.toJSONString())
-            return
-        }
-        idModule.verifyCaptureIdMrzViz(jsonString: jsonString,
-                                          result: CapacitorResult(call))
-    }
-
     @objc(createContextForBarcodeVerification:)
     func createContextForBarcodeVerification(_ call: CAPPluginCall) {
         idModule.createAamvaBarcodeVerifier(result: CapacitorResult(call))
@@ -150,7 +140,7 @@ public class ScanditIdNative: CAPPlugin {
         }
         idModule.updateOverlay(overlayJson: overlayJson, result: CapacitorResult(call))
     }
-
+    
     @objc(updateIdCaptureMode:)
     func updateIdCaptureMode(_ call: CAPPluginCall) {
         guard let modeJson = call.getString("modeJson") else {
@@ -159,7 +149,7 @@ public class ScanditIdNative: CAPPlugin {
         }
         idModule.updateModeFromJson(modeJson: modeJson, result: CapacitorResult(call))
     }
-
+    
     @objc(applyIdCaptureModeSettings:)
     func applyIdCaptureModeSettings(_ call: CAPPluginCall) {
         guard let modeSettingsJson = call.getString("modeSettingsJson") else {
