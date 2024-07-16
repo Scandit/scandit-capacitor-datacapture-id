@@ -124,6 +124,47 @@ var SupportedSides;
     SupportedSides["FrontAndBack"] = "frontAndBack";
 })(SupportedSides || (SupportedSides = {}));
 
+var TextHintPosition;
+(function (TextHintPosition) {
+    TextHintPosition["AboveViewfinder"] = "aboveViewfinder";
+    TextHintPosition["BelowViewfinder"] = "belowViewfinder";
+})(TextHintPosition || (TextHintPosition = {}));
+
+var VizMrzComparisonCheckResult;
+(function (VizMrzComparisonCheckResult) {
+    VizMrzComparisonCheckResult["Passed"] = "passed";
+    VizMrzComparisonCheckResult["Skipped"] = "skipped";
+    VizMrzComparisonCheckResult["Failed"] = "failed";
+})(VizMrzComparisonCheckResult || (VizMrzComparisonCheckResult = {}));
+
+class VizMrzDateComparisonCheck {
+    get vizValue() {
+        return DateResult.fromJSON(this.json.vizValue);
+    }
+    get mrzValue() {
+        return DateResult.fromJSON(this.json.mrzValue);
+    }
+    get checkResult() { return this.json.checkResult; }
+    get resultDescription() { return this.json.resultDescription; }
+    static fromJSON(json) {
+        const result = new VizMrzDateComparisonCheck();
+        result.json = json;
+        return result;
+    }
+}
+
+class VizMrzStringComparisonCheck {
+    get vizValue() { return this.json.vizValue; }
+    get mrzValue() { return this.json.mrzValue; }
+    get checkResult() { return this.json.checkResult; }
+    get resultDescription() { return this.json.resultDescription; }
+    static fromJSON(json) {
+        const result = new VizMrzStringComparisonCheck();
+        result.json = json;
+        return result;
+    }
+}
+
 function getIdDefaults() {
     return FactoryMaker.getInstance('IdDefaults');
 }
@@ -271,6 +312,9 @@ class IdCaptureController extends BaseController {
     }
     verifyCapturedIdAsync(capturedId) {
         return this._proxy.verifyCapturedIdAsync(capturedId);
+    }
+    verifyVizMrz(capturedId) {
+        return this._proxy.verifyVizMrz(capturedId);
     }
     setModeEnabledState(enabled) {
         this._proxy.setModeEnabledState(enabled);
@@ -515,6 +559,7 @@ class CommonCapturedIdFields {
     get firstName() { return this.json.firstName; }
     get lastName() { return this.json.lastName; }
     get fullName() { return this.json.fullName; }
+    get secondaryLastName() { return this.json.secondaryLastName; }
     get sex() { return this.json.sex; }
     get dateOfBirth() {
         return DateResult.fromJSON(this.json.dateOfBirth);
@@ -541,6 +586,7 @@ class CommonCapturedIdFields {
         const firstName = json.firstName;
         const lastName = json.lastName;
         const fullName = json.fullName;
+        const secondaryLastName = json.secondaryLastName;
         const sex = json.sex;
         const dateOfBirth = DateResult.fromJSON(json.dateOfBirth);
         const age = json.age;
@@ -562,6 +608,9 @@ class CommonCapturedIdFields {
             }
             if (!existingInstance.fullName) {
                 json.fullName = fullName;
+            }
+            if (!existingInstance.secondaryLastName) {
+                json.secondaryLastName = secondaryLastName;
             }
             if (!existingInstance.sex) {
                 json.sex = sex;
@@ -654,6 +703,7 @@ class CapturedId {
     get firstName() { return this.commonCapturedFields.firstName; }
     get lastName() { return this.commonCapturedFields.lastName; }
     get fullName() { return this.commonCapturedFields.fullName; }
+    get secondaryLastName() { return this.commonCapturedFields.secondaryLastName; }
     get sex() { return this.commonCapturedFields.sex; }
     get dateOfBirth() {
         return DateResult.fromJSON(this.commonCapturedFields.dateOfBirth);
@@ -1174,6 +1224,8 @@ class IdCaptureOverlay extends DefaultSerializeable {
         this._idLayout = IdLayout.Auto;
         this._idLayoutStyle = IdLayoutStyle.Rounded;
         this._idLayoutLineStyle = IdLayoutLineStyle.Light;
+        this._textHintPosition = TextHintPosition.AboveViewfinder;
+        this._showTextHints = true;
         this._defaultCapturedBrush = new Brush(IdCaptureOverlay.idCaptureDefaults.IdCapture.IdCaptureOverlayDefaults.defaultCapturedBrush.fillColor, IdCaptureOverlay.idCaptureDefaults.IdCapture.IdCaptureOverlayDefaults.defaultCapturedBrush.strokeColor, IdCaptureOverlay.idCaptureDefaults.IdCapture.IdCaptureOverlayDefaults.defaultCapturedBrush.strokeWidth);
         this._defaultLocalizedBrush = new Brush(IdCaptureOverlay.idCaptureDefaults.IdCapture.IdCaptureOverlayDefaults.defaultLocalizedBrush.fillColor, IdCaptureOverlay.idCaptureDefaults.IdCapture.IdCaptureOverlayDefaults.defaultLocalizedBrush.strokeColor, IdCaptureOverlay.idCaptureDefaults.IdCapture.IdCaptureOverlayDefaults.defaultLocalizedBrush.strokeWidth);
         this._defaultRejectedBrush = new Brush(IdCaptureOverlay.idCaptureDefaults.IdCapture.IdCaptureOverlayDefaults.defaultRejectedBrush.fillColor, IdCaptureOverlay.idCaptureDefaults.IdCapture.IdCaptureOverlayDefaults.defaultRejectedBrush.strokeColor, IdCaptureOverlay.idCaptureDefaults.IdCapture.IdCaptureOverlayDefaults.defaultRejectedBrush.strokeWidth);
@@ -1239,6 +1291,20 @@ class IdCaptureOverlay extends DefaultSerializeable {
     get defaultRejectedBrush() {
         return this._defaultRejectedBrush;
     }
+    get textHintPosition() {
+        return this._textHintPosition;
+    }
+    set textHintPosition(position) {
+        this._textHintPosition = position;
+        this.idCapture.controller.updateIdCaptureOverlay(this);
+    }
+    get showTextHints() {
+        return this._showTextHints;
+    }
+    set showTextHints(enabled) {
+        this._showTextHints = enabled;
+        this.idCapture.controller.updateIdCaptureOverlay(this);
+    }
 }
 __decorate([
     ignoreFromSerialization
@@ -1255,6 +1321,12 @@ __decorate([
 __decorate([
     nameForSerialization('idLayoutLineStyle')
 ], IdCaptureOverlay.prototype, "_idLayoutLineStyle", void 0);
+__decorate([
+    nameForSerialization('textHintPosition')
+], IdCaptureOverlay.prototype, "_textHintPosition", void 0);
+__decorate([
+    nameForSerialization('showTextHints')
+], IdCaptureOverlay.prototype, "_showTextHints", void 0);
 __decorate([
     nameForSerialization('capturedBrush')
 ], IdCaptureOverlay.prototype, "_capturedBrush", void 0);
@@ -1499,7 +1571,75 @@ var DocumentType;
     DocumentType["ImmigrantVisa"] = "immigrantVisa";
     DocumentType["ConsularVoterId"] = "consularVoterId";
     DocumentType["TwicCard"] = "twicCard";
+    DocumentType["ExitEntryPermit"] = "exitEntryPermit";
+    DocumentType["MainlandTravelPermitTaiwan"] = "mainlandTravelPermitTaiwan";
+    DocumentType["NbiClearance"] = "nbiClearance";
+    DocumentType["ProofOfRegistration"] = "proofOfRegistration";
+    DocumentType["TemporaryProtectionPermit"] = "temporaryProtectionPermit";
 })(DocumentType || (DocumentType = {}));
+
+class VizMrzComparisonResult {
+    get checksPassed() { return this.json.checksPassed; }
+    get resultDescription() { return this.json.resultDescription; }
+    get issuingCountryIsoMatch() {
+        return VizMrzStringComparisonCheck
+            .fromJSON(this.json.issuingCountryIsoMatch);
+    }
+    get documentNumbersMatch() {
+        return VizMrzStringComparisonCheck
+            .fromJSON(this.json.documentNumbersMatch);
+    }
+    get fullNamesMatch() {
+        return VizMrzStringComparisonCheck
+            .fromJSON(this.json.fullNamesMatch);
+    }
+    get datesOfBirthMatch() {
+        return VizMrzDateComparisonCheck
+            .fromJSON(this.json.datesOfBirthMatch);
+    }
+    get datesOfExpiryMatch() {
+        return VizMrzDateComparisonCheck
+            .fromJSON(this.json.datesOfExpiryMatch);
+    }
+    static fromJSON(json) {
+        const result = new VizMrzComparisonResult();
+        result.json = json;
+        return result;
+    }
+}
+
+class VizMrzComparisonVerifier {
+    constructor() {
+        this.controller = new IdCaptureController();
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    static create(context) {
+        return new VizMrzComparisonVerifier();
+    }
+    verify(capturedId) {
+        // Necessary for not exposing internal API on CapturedId, while only passing the private "json" property
+        // to native iOS and Android.
+        const capturedIdAsString = JSON.stringify(capturedId);
+        const capturedIdJsonData = JSON.parse(capturedIdAsString).json;
+        return new Promise((resolve, reject) => {
+            this.controller
+                .verifyVizMrz(JSON.stringify(capturedIdJsonData))
+                .then((json) => {
+                if (!json) {
+                    resolve(VizMrzComparisonResult
+                        .fromJSON(JSON.parse('{}')));
+                }
+                else {
+                    resolve(VizMrzComparisonResult
+                        .fromJSON(JSON.parse(json)));
+                }
+            }, reject);
+        });
+    }
+}
+__decorate([
+    ignoreFromSerialization
+], VizMrzComparisonVerifier.prototype, "controller", void 0);
 
 const pluginName = 'ScanditIdNative';
 // tslint:disable-next-line:variable-name
@@ -1514,6 +1654,7 @@ var CapacitorFunction;
     CapacitorFunction["ResetIdCapture"] = "resetIdCapture";
     CapacitorFunction["VerifyCapturedId"] = "verifyCapturedId";
     CapacitorFunction["VerifyCapturedIdAsync"] = "verifyCapturedIdAsync";
+    CapacitorFunction["VerifyVizMrz"] = "verifyVizMrz";
     CapacitorFunction["FinishCallback"] = "finishCallback";
     CapacitorFunction["CreateContextForBarcodeVerification"] = "createContextForBarcodeVerification";
     CapacitorFunction["SetModeEnabledState"] = "setModeEnabledState";
@@ -1622,6 +1763,11 @@ class NativeIdCaptureProxy {
             capturedId: capturedId,
         }).then((result) => result.data);
     }
+    verifyVizMrz(capturedId) {
+        return window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.VerifyVizMrz]({
+            capturedId: capturedId,
+        }).then((result) => result.data);
+    }
     updateIdCaptureMode(modeJson) {
         return window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.UpdateIdCaptureMode]({
             modeJson: modeJson
@@ -1694,6 +1840,11 @@ class ScanditIdPluginImplementation {
             ProfessionalDrivingPermit,
             VehicleRestriction,
             AamvaBarcodeVerificationResult,
+            TextHintPosition,
+            VizMrzComparisonCheckResult,
+            VizMrzComparisonResult,
+            IdCaptureError,
+            VizMrzComparisonVerifier
         };
         return api;
     }
@@ -1706,4 +1857,4 @@ registerPlugin('ScanditIdPlugin', {
 // tslint:disable-next-line:variable-name
 const ScanditIdPlugin = new ScanditIdPluginImplementation();
 
-export { AAMVABarcodeResult, AamvaBarcodeVerificationResult, AamvaBarcodeVerifier, AamvaVizBarcodeComparisonResult, AamvaVizBarcodeComparisonVerifier, ApecBusinessTravelCardMrzResult, ArgentinaIdBarcodeResult, CapturedId, CapturedResultType, ChinaExitEntryPermitMRZResult, ChinaMainlandTravelPermitMRZResult, ChinaOneWayPermitBackMrzResult, ChinaOneWayPermitFrontMrzResult, ColombiaDlBarcodeResult, ColombiaIdBarcodeResult, CommonAccessCardBarcodeResult, ComparisonCheckResult, DateResult, DocumentType, IdAnonymizationMode, IdCapture, IdCaptureError, IdCaptureFeedback, IdCaptureOverlay, IdCaptureSession, IdCaptureSettings, IdDocumentType, IdImageType, IdLayout, IdLayoutLineStyle, IdLayoutStyle, LocalizedOnlyId, MRZResult, ProfessionalDrivingPermit, RejectedId, ScanditIdPlugin, ScanditIdPluginImplementation, SouthAfricaDlBarcodeResult, SouthAfricaIdBarcodeResult, SupportedSides, USUniformedServicesBarcodeResult, USVisaVIZResult, VIZResult, VehicleRestriction };
+export { AAMVABarcodeResult, AamvaBarcodeVerificationResult, AamvaBarcodeVerifier, AamvaVizBarcodeComparisonResult, AamvaVizBarcodeComparisonVerifier, ApecBusinessTravelCardMrzResult, ArgentinaIdBarcodeResult, CapturedId, CapturedResultType, ChinaExitEntryPermitMRZResult, ChinaMainlandTravelPermitMRZResult, ChinaOneWayPermitBackMrzResult, ChinaOneWayPermitFrontMrzResult, ColombiaDlBarcodeResult, ColombiaIdBarcodeResult, CommonAccessCardBarcodeResult, ComparisonCheckResult, DateResult, DocumentType, IdAnonymizationMode, IdCapture, IdCaptureError, IdCaptureFeedback, IdCaptureOverlay, IdCaptureSession, IdCaptureSettings, IdDocumentType, IdImageType, IdLayout, IdLayoutLineStyle, IdLayoutStyle, LocalizedOnlyId, MRZResult, ProfessionalDrivingPermit, RejectedId, ScanditIdPlugin, ScanditIdPluginImplementation, SouthAfricaDlBarcodeResult, SouthAfricaIdBarcodeResult, SupportedSides, TextHintPosition, USUniformedServicesBarcodeResult, USVisaVIZResult, VIZResult, VehicleRestriction, VizMrzComparisonResult, VizMrzComparisonVerifier };

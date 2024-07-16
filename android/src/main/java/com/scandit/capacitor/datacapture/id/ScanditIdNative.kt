@@ -77,6 +77,18 @@ class ScanditIdNative : Plugin(), Emitter {
     }
 
     @PluginMethod
+    fun verifyVizMrz(call: PluginCall) {
+        try {
+            val capturedIdJson = call.data.getString("capturedId")
+                ?: return call.reject("Request doesn't contain the captureId")
+
+            idCaptureModule.vizMrzVerification(capturedIdJson, CapacitorResult(call))
+        } catch (e: Exception) {
+            call.reject(JsonParseError(e.message).toString())
+        }
+    }
+
+    @PluginMethod
     fun resetIdCapture(call: PluginCall) {
         idCaptureModule.resetMode()
         call.resolve()

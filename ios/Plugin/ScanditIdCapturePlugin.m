@@ -12,6 +12,7 @@
 CAP_PLUGIN(ScanditIdNative, "ScanditIdNative",
            CAP_PLUGIN_METHOD(getDefaults, CAPPluginReturnPromise);
            CAP_PLUGIN_METHOD(verifyCapturedId, CAPPluginReturnPromise);
+           CAP_PLUGIN_METHOD(verifyVizMrz, CAPPluginReturnPromise);
            CAP_PLUGIN_METHOD(resetIdCapture, CAPPluginReturnPromise);
            CAP_PLUGIN_METHOD(finishCallback, CAPPluginReturnPromise);
            CAP_PLUGIN_METHOD(verifyCapturedIdAsync, CAPPluginReturnPromise);
