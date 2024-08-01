@@ -99,9 +99,13 @@ class RejectedId {
     get location() {
         return this._location;
     }
+    get rejectionReason() {
+        return this._rejectionReason;
+    }
     static fromJSON(json) {
         const result = new RejectedId();
         result._location = Quadrilateral.fromJSON(json.location);
+        result._rejectionReason = json.rejectionReason;
         return result;
     }
 }
@@ -165,6 +169,13 @@ class VizMrzStringComparisonCheck {
     }
 }
 
+var RejectionReason;
+(function (RejectionReason) {
+    RejectionReason["DocumentTypeNotEnabled"] = "documentTypeNotEnabled";
+    RejectionReason["IncorrectBarcodeFormat"] = "incorrectBarcodeFormat";
+    RejectionReason["DocumentVoided"] = "documentVoided";
+})(RejectionReason || (RejectionReason = {}));
+
 function getIdDefaults() {
     return FactoryMaker.getInstance('IdDefaults');
 }
@@ -202,7 +213,8 @@ function parseIdDefaults(jsonDefaults) {
                 },
             },
             IdCaptureSettings: {
-                anonymizationMode: jsonDefaults.IdCaptureSettings.anonymizationMode
+                anonymizationMode: jsonDefaults.IdCaptureSettings.anonymizationMode,
+                rejectVoidedIds: jsonDefaults.IdCaptureSettings.rejectVoidedIds,
             },
         },
     };
@@ -559,6 +571,7 @@ class CommonCapturedIdFields {
     get firstName() { return this.json.firstName; }
     get lastName() { return this.json.lastName; }
     get fullName() { return this.json.fullName; }
+    get secondaryLastName() { return this.json.secondaryLastName; }
     get sex() { return this.json.sex; }
     get dateOfBirth() {
         return DateResult.fromJSON(this.json.dateOfBirth);
@@ -585,6 +598,7 @@ class CommonCapturedIdFields {
         const firstName = json.firstName;
         const lastName = json.lastName;
         const fullName = json.fullName;
+        const secondaryLastName = json.secondaryLastName;
         const sex = json.sex;
         const dateOfBirth = DateResult.fromJSON(json.dateOfBirth);
         const age = json.age;
@@ -606,6 +620,9 @@ class CommonCapturedIdFields {
             }
             if (!existingInstance.fullName) {
                 json.fullName = fullName;
+            }
+            if (!existingInstance.secondaryLastName) {
+                json.secondaryLastName = secondaryLastName;
             }
             if (!existingInstance.sex) {
                 json.sex = sex;
@@ -667,6 +684,10 @@ class VIZResult {
     get residentialStatus() { return this.json.residentialStatus; }
     get capturedSides() { return this.json.capturedSides; }
     get isBackSideCaptureSupported() { return this.json.isBackSideCaptureSupported; }
+    get bloodType() { return this.json.bloodType; }
+    get sponsor() { return this.json.sponsor; }
+    get mothersName() { return this.json.mothersName; }
+    get fathersName() { return this.json.fathersName; }
     static fromJSON(json) {
         const result = new VIZResult();
         result.json = json;
@@ -698,6 +719,7 @@ class CapturedId {
     get firstName() { return this.commonCapturedFields.firstName; }
     get lastName() { return this.commonCapturedFields.lastName; }
     get fullName() { return this.commonCapturedFields.fullName; }
+    get secondaryLastName() { return this.commonCapturedFields.secondaryLastName; }
     get sex() { return this.commonCapturedFields.sex; }
     get dateOfBirth() {
         return DateResult.fromJSON(this.commonCapturedFields.dateOfBirth);
@@ -999,11 +1021,11 @@ class IdCaptureListenerController {
     }
     unsubscribeListener() {
         this._proxy.unregisterListenerForEvents();
-        this.eventEmitter.removeListener(IdCaptureListenerEvents.inCallback);
-        this.eventEmitter.removeListener(IdCaptureListenerEvents.didCapture);
-        this.eventEmitter.removeListener(IdCaptureListenerEvents.didLocalize);
-        this.eventEmitter.removeListener(IdCaptureListenerEvents.didReject);
-        this.eventEmitter.removeListener(IdCaptureListenerEvents.didTimeOut);
+        this.eventEmitter.removeAllListeners(IdCaptureListenerEvents.inCallback);
+        this.eventEmitter.removeAllListeners(IdCaptureListenerEvents.didCapture);
+        this.eventEmitter.removeAllListeners(IdCaptureListenerEvents.didLocalize);
+        this.eventEmitter.removeAllListeners(IdCaptureListenerEvents.didReject);
+        this.eventEmitter.removeAllListeners(IdCaptureListenerEvents.didTimeOut);
     }
     notifyListenersOfDidCapture(session) {
         const mode = this.idCapture;
@@ -1348,6 +1370,7 @@ class IdCaptureSettings extends DefaultSerializeable {
         this.supportedDocuments = [];
         this.supportedSides = SupportedSides.FrontOnly;
         this.anonymizationMode = IdCaptureSettings.idCaptureDefaults.IdCapture.IdCaptureSettings.anonymizationMode;
+        this.rejectVoidedIds = IdCaptureSettings.idCaptureDefaults.IdCapture.IdCaptureSettings.rejectVoidedIds;
     }
     static get idCaptureDefaults() {
         return FactoryMaker.getInstance('IdDefaults');
@@ -1566,6 +1589,7 @@ var DocumentType;
     DocumentType["ConsularVoterId"] = "consularVoterId";
     DocumentType["TwicCard"] = "twicCard";
     DocumentType["ExitEntryPermit"] = "exitEntryPermit";
+    DocumentType["MainlandTravelPermitHongKongMacau"] = "mainlandTravelPermitHongKongMacau";
     DocumentType["MainlandTravelPermitTaiwan"] = "mainlandTravelPermitTaiwan";
     DocumentType["NbiClearance"] = "nbiClearance";
     DocumentType["ProofOfRegistration"] = "proofOfRegistration";
@@ -1838,7 +1862,8 @@ class ScanditIdPluginImplementation {
             VizMrzComparisonCheckResult,
             VizMrzComparisonResult,
             IdCaptureError,
-            VizMrzComparisonVerifier
+            VizMrzComparisonVerifier,
+            RejectionReason
         };
         return api;
     }
@@ -1851,4 +1876,4 @@ registerPlugin('ScanditIdPlugin', {
 // tslint:disable-next-line:variable-name
 const ScanditIdPlugin = new ScanditIdPluginImplementation();
 
-export { AAMVABarcodeResult, AamvaBarcodeVerificationResult, AamvaBarcodeVerifier, AamvaVizBarcodeComparisonResult, AamvaVizBarcodeComparisonVerifier, ApecBusinessTravelCardMrzResult, ArgentinaIdBarcodeResult, CapturedId, CapturedResultType, ChinaExitEntryPermitMRZResult, ChinaMainlandTravelPermitMRZResult, ChinaOneWayPermitBackMrzResult, ChinaOneWayPermitFrontMrzResult, ColombiaDlBarcodeResult, ColombiaIdBarcodeResult, CommonAccessCardBarcodeResult, ComparisonCheckResult, DateResult, DocumentType, IdAnonymizationMode, IdCapture, IdCaptureError, IdCaptureFeedback, IdCaptureOverlay, IdCaptureSession, IdCaptureSettings, IdDocumentType, IdImageType, IdLayout, IdLayoutLineStyle, IdLayoutStyle, LocalizedOnlyId, MRZResult, ProfessionalDrivingPermit, RejectedId, ScanditIdPlugin, ScanditIdPluginImplementation, SouthAfricaDlBarcodeResult, SouthAfricaIdBarcodeResult, SupportedSides, TextHintPosition, USUniformedServicesBarcodeResult, USVisaVIZResult, VIZResult, VehicleRestriction, VizMrzComparisonResult, VizMrzComparisonVerifier };
+export { AAMVABarcodeResult, AamvaBarcodeVerificationResult, AamvaBarcodeVerifier, AamvaVizBarcodeComparisonResult, AamvaVizBarcodeComparisonVerifier, ApecBusinessTravelCardMrzResult, ArgentinaIdBarcodeResult, CapturedId, CapturedResultType, ChinaExitEntryPermitMRZResult, ChinaMainlandTravelPermitMRZResult, ChinaOneWayPermitBackMrzResult, ChinaOneWayPermitFrontMrzResult, ColombiaDlBarcodeResult, ColombiaIdBarcodeResult, CommonAccessCardBarcodeResult, ComparisonCheckResult, DateResult, DocumentType, IdAnonymizationMode, IdCapture, IdCaptureError, IdCaptureFeedback, IdCaptureOverlay, IdCaptureSession, IdCaptureSettings, IdDocumentType, IdImageType, IdLayout, IdLayoutLineStyle, IdLayoutStyle, LocalizedOnlyId, MRZResult, ProfessionalDrivingPermit, RejectedId, RejectionReason, ScanditIdPlugin, ScanditIdPluginImplementation, SouthAfricaDlBarcodeResult, SouthAfricaIdBarcodeResult, SupportedSides, TextHintPosition, USUniformedServicesBarcodeResult, USVisaVIZResult, VIZResult, VehicleRestriction, VizMrzComparisonResult, VizMrzComparisonVerifier };
