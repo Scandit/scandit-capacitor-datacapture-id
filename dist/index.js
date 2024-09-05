@@ -1464,6 +1464,9 @@ class AamvaVizBarcodeComparisonResult {
         return DateComparisonCheck
             .fromJSON(this.json.datesOfIssueMatch);
     }
+    get frontMismatchImage() {
+        return this.json.frontMismatchImage;
+    }
     static fromJSON(json) {
         const result = new AamvaVizBarcodeComparisonResult();
         result.json = json;
