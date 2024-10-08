@@ -1,4 +1,4 @@
-import { nameForSerialization, Quadrilateral, DefaultSerializeable, CameraSettings, FactoryMaker, ignoreFromSerialization, Feedback, Brush, BaseController, CameraController, Color } from 'scandit-capacitor-datacapture-core/dist/core';
+import { nameForSerialization, Quadrilateral, DefaultSerializeable, Feedback, ignoreFromSerialization, CameraSettings, FactoryMaker, Brush, BaseController, CameraController, Color } from 'scandit-capacitor-datacapture-core/dist/core';
 import { registerPlugin } from '@capacitor/core';
 import { CapacitorCore, capacitorExec } from 'scandit-capacitor-datacapture-core';
 
@@ -266,11 +266,35 @@ class AAMVABarcodeResult {
     }
 }
 
+var AamvaBarcodeVerificationStatus;
+(function (AamvaBarcodeVerificationStatus) {
+    AamvaBarcodeVerificationStatus["Authentic"] = "authentic";
+    AamvaBarcodeVerificationStatus["LikelyForged"] = "maybeForged";
+    AamvaBarcodeVerificationStatus["Forged"] = "forged";
+})(AamvaBarcodeVerificationStatus || (AamvaBarcodeVerificationStatus = {}));
+
 class AamvaBarcodeVerificationResult {
+    /**
+     * @deprecated
+     */
     get allChecksPassed() { return this.json.allChecksPassed; }
+    get status() {
+        return this._status;
+    }
     static fromJSON(json) {
         const result = new AamvaBarcodeVerificationResult();
         result.json = json;
+        switch (result.json.verificationStatus) {
+            case "authentic":
+                result._status = AamvaBarcodeVerificationStatus.Authentic;
+                break;
+            case "maybeForged":
+                result._status = AamvaBarcodeVerificationStatus.LikelyForged;
+                break;
+            case "forged":
+                result._status = AamvaBarcodeVerificationStatus.Forged;
+                break;
+        }
         return result;
     }
 }
@@ -339,6 +363,9 @@ class IdCaptureController extends BaseController {
     }
     updateIdCaptureOverlay(overlay) {
         return this._proxy.updateIdCaptureOverlay(JSON.stringify(overlay.toJSON()));
+    }
+    updateFeedback(feedback) {
+        return this._proxy.updateFeedback(JSON.stringify(feedback.toJSON()));
     }
 }
 
@@ -1069,6 +1096,71 @@ class IdCaptureListenerController {
     }
 }
 
+class IdCaptureFeedback extends DefaultSerializeable {
+    static get defaultFeedback() {
+        return new IdCaptureFeedback(IdCaptureFeedback.idDefaults.IdCapture.Feedback.idCaptured, IdCaptureFeedback.idDefaults.IdCapture.Feedback.idRejected, IdCaptureFeedback.idDefaults.IdCapture.Feedback.idCaptureTimeout);
+    }
+    get idCaptured() {
+        return this._idCaptured;
+    }
+    set idCaptured(idCaptured) {
+        this._idCaptured = idCaptured;
+        this.updateFeedback();
+    }
+    get idRejected() {
+        return this._idRejected;
+    }
+    set idRejected(idRejected) {
+        this._idRejected = idRejected;
+        this.updateFeedback();
+    }
+    get idCaptureTimeout() {
+        return this._idCaptureTimeout;
+    }
+    set idCaptureTimeout(idCaptureTimeout) {
+        this._idCaptureTimeout = idCaptureTimeout;
+        this.updateFeedback();
+    }
+    static fromJSON(json) {
+        const idCaptured = Feedback.fromJSON(json.idCaptured);
+        const idRejected = Feedback.fromJSON(json.idRejected);
+        const idCaptureTimeout = Feedback.fromJSON(json.idCaptureTimeout);
+        return new IdCaptureFeedback(idCaptured, idRejected, idCaptureTimeout);
+    }
+    static get idDefaults() {
+        return getIdDefaults();
+    }
+    updateFeedback() {
+        var _a;
+        (_a = this.controller) === null || _a === void 0 ? void 0 : _a.updateFeedback(this);
+    }
+    constructor(idCaptured, idRejected, idCaptureTimeout) {
+        super();
+        this.controller = null;
+        this._idCaptured = IdCaptureFeedback.idDefaults.IdCapture.Feedback.idCaptured;
+        this._idRejected = IdCaptureFeedback.idDefaults.IdCapture.Feedback.idRejected;
+        this._idCaptureTimeout = IdCaptureFeedback.idDefaults.IdCapture.Feedback.idCaptureTimeout;
+        this.idCaptured = idCaptured;
+        this.idRejected = idRejected;
+        this.idCaptureTimeout = idCaptureTimeout;
+    }
+}
+__decorate([
+    ignoreFromSerialization
+], IdCaptureFeedback.prototype, "controller", void 0);
+__decorate([
+    nameForSerialization('idCaptured')
+], IdCaptureFeedback.prototype, "_idCaptured", void 0);
+__decorate([
+    nameForSerialization('idRejected')
+], IdCaptureFeedback.prototype, "_idRejected", void 0);
+__decorate([
+    nameForSerialization('idCaptureTimeout')
+], IdCaptureFeedback.prototype, "_idCaptureTimeout", void 0);
+__decorate([
+    ignoreFromSerialization
+], IdCaptureFeedback, "idDefaults", null);
+
 class IdCapture extends DefaultSerializeable {
     get isEnabled() {
         return this._isEnabled;
@@ -1085,7 +1177,8 @@ class IdCapture extends DefaultSerializeable {
     }
     set feedback(feedback) {
         this._feedback = feedback;
-        this.controller.updateIdCaptureMode();
+        this._feedback.controller = this.controller;
+        this.controller.updateFeedback(feedback);
     }
     static get recommendedCameraSettings() {
         return new CameraSettings(IdCapture.idCaptureDefaults.IdCapture.RecommendedCameraSettings);
@@ -1117,11 +1210,13 @@ class IdCapture extends DefaultSerializeable {
         super();
         this.type = 'idCapture';
         this._isEnabled = true;
+        this._feedback = IdCaptureFeedback.defaultFeedback;
         this.privateContext = null;
         this.listeners = [];
         this.isInListenerCallback = false;
         this.controller = IdCaptureController.forIdCapture(this);
         this.listenerController = IdCaptureListenerController.forIdCapture(this);
+        this.feedback.controller = this.controller;
     }
     applySettings(settings) {
         this.settings = settings;
@@ -1167,33 +1262,6 @@ __decorate([
 __decorate([
     ignoreFromSerialization
 ], IdCapture, "idCaptureDefaults", null);
-
-class IdCaptureFeedback extends DefaultSerializeable {
-    static get defaultFeedback() {
-        return new IdCaptureFeedback(IdCaptureFeedback.idDefaults.IdCapture.Feedback.idCaptured, IdCaptureFeedback.idDefaults.IdCapture.Feedback.idRejected, IdCaptureFeedback.idDefaults.IdCapture.Feedback.idCaptureTimeout);
-    }
-    static fromJSON(json) {
-        const idCaptured = Feedback.fromJSON(json.idCaptured);
-        const idRejected = Feedback.fromJSON(json.idRejected);
-        const idCaptureTimeout = Feedback.fromJSON(json.idCaptureTimeout);
-        return new IdCaptureFeedback(idCaptured, idRejected, idCaptureTimeout);
-    }
-    static get idDefaults() {
-        return getIdDefaults();
-    }
-    constructor(idCaptured, idRejected, idCaptureTimeout) {
-        super();
-        this.idCaptured = IdCaptureFeedback.idDefaults.IdCapture.Feedback.idCaptured;
-        this.idRejected = IdCaptureFeedback.idDefaults.IdCapture.Feedback.idRejected;
-        this.idCaptureTimeout = IdCaptureFeedback.idDefaults.IdCapture.Feedback.idCaptureTimeout;
-        this.idCaptured = idCaptured;
-        this.idRejected = idRejected;
-        this.idCaptureTimeout = idCaptureTimeout;
-    }
-}
-__decorate([
-    ignoreFromSerialization
-], IdCaptureFeedback, "idDefaults", null);
 
 var IdLayoutLineStyle;
 (function (IdLayoutLineStyle) {
@@ -1597,6 +1665,12 @@ var DocumentType;
     DocumentType["NbiClearance"] = "nbiClearance";
     DocumentType["ProofOfRegistration"] = "proofOfRegistration";
     DocumentType["TemporaryProtectionPermit"] = "temporaryProtectionPermit";
+    DocumentType["MunicipalId"] = "municipalId";
+    DocumentType["AfghanCitizenCard"] = "afghanCitizenCard";
+    DocumentType["Eid"] = "eid";
+    DocumentType["Pass"] = "pass";
+    DocumentType["SisId"] = "sisId";
+    DocumentType["MedicalMarijuanaCard"] = "medicalMarijuanaCard";
 })(DocumentType || (DocumentType = {}));
 
 class VizMrzComparisonResult {
@@ -1682,6 +1756,7 @@ var CapacitorFunction;
     CapacitorFunction["UpdateIdCaptureOverlay"] = "updateIdCaptureOverlay";
     CapacitorFunction["UpdateIdCaptureMode"] = "updateIdCaptureMode";
     CapacitorFunction["ApplyIdCaptureModeSettings"] = "applyIdCaptureModeSettings";
+    CapacitorFunction["UpdateIdCaptureFeedback"] = "updateIdCaptureFeedback";
 })(CapacitorFunction || (CapacitorFunction = {}));
 const getDefaults = async () => {
     try {
@@ -1807,6 +1882,11 @@ class NativeIdCaptureProxy {
     setModeEnabledState(enabled) {
         window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.SetModeEnabledState]({ 'enabled': enabled });
     }
+    updateFeedback(feedbackJson) {
+        return window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.UpdateIdCaptureFeedback]({
+            feedbackJson: feedbackJson
+        });
+    }
 }
 
 function initIdProxy() {
@@ -1838,6 +1918,7 @@ class ScanditIdPluginImplementation {
             AamvaVizBarcodeComparisonResult,
             AamvaVizBarcodeComparisonVerifier,
             AamvaBarcodeVerifier,
+            AamvaBarcodeVerificationStatus,
             CapturedId,
             RejectedId,
             LocalizedOnlyId,
@@ -1879,4 +1960,4 @@ registerPlugin('ScanditIdPlugin', {
 // tslint:disable-next-line:variable-name
 const ScanditIdPlugin = new ScanditIdPluginImplementation();
 
-export { AAMVABarcodeResult, AamvaBarcodeVerificationResult, AamvaBarcodeVerifier, AamvaVizBarcodeComparisonResult, AamvaVizBarcodeComparisonVerifier, ApecBusinessTravelCardMrzResult, ArgentinaIdBarcodeResult, CapturedId, CapturedResultType, ChinaExitEntryPermitMRZResult, ChinaMainlandTravelPermitMRZResult, ChinaOneWayPermitBackMrzResult, ChinaOneWayPermitFrontMrzResult, ColombiaDlBarcodeResult, ColombiaIdBarcodeResult, CommonAccessCardBarcodeResult, ComparisonCheckResult, DateResult, DocumentType, IdAnonymizationMode, IdCapture, IdCaptureError, IdCaptureFeedback, IdCaptureOverlay, IdCaptureSession, IdCaptureSettings, IdDocumentType, IdImageType, IdLayout, IdLayoutLineStyle, IdLayoutStyle, LocalizedOnlyId, MRZResult, ProfessionalDrivingPermit, RejectedId, RejectionReason, ScanditIdPlugin, ScanditIdPluginImplementation, SouthAfricaDlBarcodeResult, SouthAfricaIdBarcodeResult, SupportedSides, TextHintPosition, USUniformedServicesBarcodeResult, USVisaVIZResult, VIZResult, VehicleRestriction, VizMrzComparisonResult, VizMrzComparisonVerifier };
+export { AAMVABarcodeResult, AamvaBarcodeVerificationResult, AamvaBarcodeVerificationStatus, AamvaBarcodeVerifier, AamvaVizBarcodeComparisonResult, AamvaVizBarcodeComparisonVerifier, ApecBusinessTravelCardMrzResult, ArgentinaIdBarcodeResult, CapturedId, CapturedResultType, ChinaExitEntryPermitMRZResult, ChinaMainlandTravelPermitMRZResult, ChinaOneWayPermitBackMrzResult, ChinaOneWayPermitFrontMrzResult, ColombiaDlBarcodeResult, ColombiaIdBarcodeResult, CommonAccessCardBarcodeResult, ComparisonCheckResult, DateResult, DocumentType, IdAnonymizationMode, IdCapture, IdCaptureError, IdCaptureFeedback, IdCaptureOverlay, IdCaptureSession, IdCaptureSettings, IdDocumentType, IdImageType, IdLayout, IdLayoutLineStyle, IdLayoutStyle, LocalizedOnlyId, MRZResult, ProfessionalDrivingPermit, RejectedId, RejectionReason, ScanditIdPlugin, ScanditIdPluginImplementation, SouthAfricaDlBarcodeResult, SouthAfricaIdBarcodeResult, SupportedSides, TextHintPosition, USUniformedServicesBarcodeResult, USVisaVIZResult, VIZResult, VehicleRestriction, VizMrzComparisonResult, VizMrzComparisonVerifier };

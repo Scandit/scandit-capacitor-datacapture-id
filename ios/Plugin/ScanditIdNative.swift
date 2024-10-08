@@ -168,4 +168,13 @@ public class ScanditIdNative: CAPPlugin {
         }
         idModule.applyModeSettings(modeSettingsJson: modeSettingsJson, result: CapacitorResult(call))
     }
+
+    @objc(updateIdCaptureFeedback:)
+    func updateIdCaptureFeedback(_ call: CAPPluginCall) {
+        guard let feedbackJson = call.getString("feedbackJson") else {
+            call.reject(CommandError.invalidJSON.toJSONString())
+            return
+        }
+        idModule.updateFeedback(feedbackJson: feedbackJson, result: CapacitorResult(call))
+    }
 }

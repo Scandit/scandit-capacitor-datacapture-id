@@ -182,6 +182,12 @@ class ScanditIdNative : Plugin(), Emitter {
         notifyListeners(eventName, JSObject.fromJSONObject(JSONObject(payload)))
     }
 
+    @PluginMethod
+    fun updateIdCaptureFeedback(call: PluginCall) {
+        val feedbackJson = call.data.getString("feedbackJson")
+            ?: return call.reject(WRONG_INPUT)
+        idCaptureModule.updateFeedback(feedbackJson, CapacitorResult(call))
+    }
 
     override fun hasListenersForEvent(eventName: String): Boolean = this.hasListeners(eventName)
 

@@ -20,4 +20,5 @@ CAP_PLUGIN(ScanditIdNative, "ScanditIdNative",
            CAP_PLUGIN_METHOD(setModeEnabledState, CAPPluginReturnPromise);
            CAP_PLUGIN_METHOD(updateIdCaptureOverlay, CAPPluginReturnPromise);
            CAP_PLUGIN_METHOD(updateIdCaptureMode, CAPPluginReturnPromise);
-           CAP_PLUGIN_METHOD(applyIdCaptureModeSettings, CAPPluginReturnPromise);)
+           CAP_PLUGIN_METHOD(applyIdCaptureModeSettings, CAPPluginReturnPromise);
+           CAP_PLUGIN_METHOD(updateIdCaptureFeedback, CAPPluginReturnPromise);)

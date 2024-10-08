@@ -21,6 +21,7 @@ export declare enum CapacitorFunction {
     SetModeEnabledState = "setModeEnabledState",
     UpdateIdCaptureOverlay = "updateIdCaptureOverlay",
     UpdateIdCaptureMode = "updateIdCaptureMode",
-    ApplyIdCaptureModeSettings = "applyIdCaptureModeSettings"
+    ApplyIdCaptureModeSettings = "applyIdCaptureModeSettings",
+    UpdateIdCaptureFeedback = "updateIdCaptureFeedback"
 }
 export declare const getDefaults: () => Promise<void>;

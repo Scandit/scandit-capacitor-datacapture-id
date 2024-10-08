@@ -9,6 +9,7 @@ export declare class NativeIdCaptureProxy implements IdCaptureProxy {
     applyIdCaptureModeSettings(newSettingsJson: string): Promise<void>;
     updateIdCaptureOverlay(overlayJson: string): Promise<void>;
     setModeEnabledState(enabled: boolean): void;
+    updateFeedback(feedbackJson: string): Promise<void>;
 }
 export interface VerificationResult {
     data: any | null;
