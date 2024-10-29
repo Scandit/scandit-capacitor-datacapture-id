@@ -1671,6 +1671,12 @@ var DocumentType;
     DocumentType["Pass"] = "pass";
     DocumentType["SisId"] = "sisId";
     DocumentType["MedicalMarijuanaCard"] = "medicalMarijuanaCard";
+    DocumentType["AsicCard"] = "asicCard";
+    DocumentType["BidoonCard"] = "bidoonCard";
+    DocumentType["InterimHealthInsuranceCard"] = "interimHealthInsuranceCard";
+    DocumentType["NonVoterId"] = "nonVoterId";
+    DocumentType["ReciprocalHealthInsuranceCard"] = "reciprocalHealthInsuranceCard";
+    DocumentType["VehicleRegistration"] = "vehicleRegistration";
 })(DocumentType || (DocumentType = {}));
 
 class VizMrzComparisonResult {
