@@ -65,6 +65,30 @@ class ScanditIdNative : Plugin(), Emitter {
     }
 
     @PluginMethod
+    fun verifyCapturedId(call: PluginCall) {
+        try {
+            val capturedIdJson = call.data.getString("capturedId")
+                ?: return call.reject("Request doesn't contain the captureId")
+
+            idCaptureModule.verifyCaptureId(capturedIdJson, CapacitorResult(call))
+        } catch (e: Exception) {
+            call.reject(JsonParseError(e.message).toString())
+        }
+    }
+
+    @PluginMethod
+    fun verifyVizMrz(call: PluginCall) {
+        try {
+            val capturedIdJson = call.data.getString("capturedId")
+                ?: return call.reject("Request doesn't contain the captureId")
+
+            idCaptureModule.vizMrzVerification(capturedIdJson, CapacitorResult(call))
+        } catch (e: Exception) {
+            call.reject(JsonParseError(e.message).toString())
+        }
+    }
+
+    @PluginMethod
     fun resetIdCapture(call: PluginCall) {
         idCaptureModule.resetMode()
         call.resolve()
@@ -113,8 +137,14 @@ class ScanditIdNative : Plugin(), Emitter {
                 FrameworksIdCaptureListener.ON_ID_CAPTURED_EVENT_NAME ->
                     idCaptureModule.finishDidCaptureId(resultData?.enabled == true)
 
+                FrameworksIdCaptureListener.ON_ID_LOCALIZED_EVENT_NAME ->
+                    idCaptureModule.finishDidLocalizeId(resultData?.enabled == true)
+
                 FrameworksIdCaptureListener.ON_ID_REJECTED_EVENT_NAME ->
                     idCaptureModule.finishDidRejectId(resultData?.enabled == true)
+
+                FrameworksIdCaptureListener.ON_TIMEOUT_EVENT_NAME ->
+                    idCaptureModule.finishDidTimeout(resultData?.enabled == true)
             }
         } catch (e: JSONException) {
             println(e)
