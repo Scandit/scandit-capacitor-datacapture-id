@@ -1,6 +1,6 @@
 {
   "name": "scandit-capacitor-datacapture-id",
-  "version": "6.28.4",
+  "version": "7.1.0",
   "description": "Scandit Data Capture SDK for Capacitor",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -45,16 +45,13 @@
     "@capacitor/android": "^5.0.0",
     "@capacitor/core": "^5.0.0",
     "@capacitor/ios": "^5.0.0",
-    "@capacitor/docgen": "^0.2.1",
-    "@ionic/prettier-config": "^1.0.1",
-    "@ionic/swiftlint-config": "^1.1.2",
+    "@ionic/prettier-config": "^4.0.0",
     "@jest/globals": "^29.7.0",
     "@types/node": "18.15.3",
     "babel-jest": "^29.7.0",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
-    "prettier": "~2.2.0",
-    "prettier-plugin-java": "^2.0.0",
+    "prettier": "^3.4.2",
     "rimraf": "^4.1.2",
     "rollup": "3.26.2",
     "ts-jest": "^29.1.2",
@@ -62,19 +59,17 @@
     "@rollup/plugin-typescript": "11.1.0",
     "@rollup/plugin-commonjs": "24.1.0",
     "rollup-plugin-modify": "3.0.0",
-    "swiftlint": "^1.0.1",
     "typescript": "4.9.5",
     "eslint": "8.37.0",
     "@typescript-eslint/parser": "5.57.1",
     "@typescript-eslint/eslint-plugin": "5.57.1"
   },
   "dependencies": {
-    "scandit-capacitor-datacapture-core": "6.28.4",
-    "scandit-datacapture-frameworks-core": "6.28.4",
-    "scandit-datacapture-frameworks-id": "6.28.4"
+    "scandit-capacitor-datacapture-core": "7.1.0",
+    "scandit-datacapture-frameworks-core": "7.1.0",
+    "scandit-datacapture-frameworks-id": "7.1.0"
   },
   "prettier": "@ionic/prettier-config",
-  "swiftlint": "@ionic/swiftlint-config",
   "capacitor": {
     "ios": {
       "src": "ios"
