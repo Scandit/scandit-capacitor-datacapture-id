@@ -1,6 +1,13 @@
-import { nameForSerialization, DefaultSerializeable, Feedback, ignoreFromSerialization, CameraSettings, FactoryMaker, Brush, BaseController, EventDataParser, Color } from 'scandit-capacitor-datacapture-core/dist/core';
+import { nameForSerialization, Quadrilateral, DefaultSerializeable, Feedback, ignoreFromSerialization, CameraSettings, FactoryMaker, Brush, BaseController, CameraController, Color } from 'scandit-capacitor-datacapture-core/dist/core';
 import { registerPlugin } from '@capacitor/core';
 import { CapacitorCore, capacitorExec } from 'scandit-capacitor-datacapture-core';
+
+var ComparisonCheckResult;
+(function (ComparisonCheckResult) {
+    ComparisonCheckResult["Passed"] = "passed";
+    ComparisonCheckResult["Skipped"] = "skipped";
+    ComparisonCheckResult["Failed"] = "failed";
+})(ComparisonCheckResult || (ComparisonCheckResult = {}));
 
 class DateResult {
     get day() { return this.json.day; }
@@ -22,6 +29,22 @@ class DateResult {
     }
 }
 
+class DateComparisonCheck {
+    get vizValue() {
+        return DateResult.fromJSON(this.json.vizValue);
+    }
+    get aamvaBarcodeValue() {
+        return DateResult.fromJSON(this.json.aamvaBarcodeValue);
+    }
+    get checkResult() { return this.json.checkResult; }
+    get resultDescription() { return this.json.resultDescription; }
+    static fromJSON(json) {
+        const result = new DateComparisonCheck();
+        result.json = json;
+        return result;
+    }
+}
+
 var IdAnonymizationMode;
 (function (IdAnonymizationMode) {
     IdAnonymizationMode["None"] = "none";
@@ -30,18 +53,80 @@ var IdAnonymizationMode;
     IdAnonymizationMode["FieldsAndImages"] = "fieldsAndImages";
 })(IdAnonymizationMode || (IdAnonymizationMode = {}));
 
+var IdDocumentType;
+(function (IdDocumentType) {
+    IdDocumentType["AAMVABarcode"] = "aamvaBarcode";
+    IdDocumentType["ArgentinaIdBarcode"] = "argentinaIdBarcode";
+    IdDocumentType["ColombiaIdBarcode"] = "colombiaIdBarcode";
+    IdDocumentType["ColombiaDlBarcode"] = "colombiaDlBarcode";
+    IdDocumentType["CommonAccessCardBarcode"] = "commonAccessCardBarcode";
+    IdDocumentType["DLVIZ"] = "dlViz";
+    IdDocumentType["IdCardMRZ"] = "idCardMrz";
+    IdDocumentType["IdCardVIZ"] = "idCardViz";
+    IdDocumentType["PassportMRZ"] = "passportMrz";
+    IdDocumentType["PassportVIZ"] = "passportViz";
+    IdDocumentType["SouthAfricaDlBarcode"] = "southAfricaDlBarcode";
+    IdDocumentType["SouthAfricaIdBarcode"] = "southAfricaIdBarcode";
+    IdDocumentType["SwissDLMRZ"] = "swissDlMrz";
+    IdDocumentType["USUSIdBarcode"] = "usUsIdBarcode";
+    IdDocumentType["VisaMRZ"] = "visaMrz";
+    IdDocumentType["ChinaMainlandTravelPermitMRZ"] = "chinaMainlandTravelPermitMrz";
+    IdDocumentType["ChinaExitEntryPermitMRZ"] = "chinaExitEntryPermitMrz";
+    IdDocumentType["ChinaOneWayPermitBackMRZ"] = "chinaOneWayPermitBackMrz";
+    IdDocumentType["ChinaOneWayPermitFrontMRZ"] = "chinaOneWayPermitFrontMrz";
+    IdDocumentType["ApecBusinessTravelCardMRZ"] = "apecBusinessTravelCardMrz";
+})(IdDocumentType || (IdDocumentType = {}));
+
 var IdImageType;
 (function (IdImageType) {
     IdImageType["Face"] = "face";
-    IdImageType["CroppedDocument"] = "croppedDocument";
-    IdImageType["Frame"] = "frame";
+    IdImageType["IdFront"] = "idFront";
+    IdImageType["IdBack"] = "idBack";
 })(IdImageType || (IdImageType = {}));
 
-var CapturedSides;
-(function (CapturedSides) {
-    CapturedSides["FrontOnly"] = "frontOnly";
-    CapturedSides["FrontAndBack"] = "frontAndBack";
-})(CapturedSides || (CapturedSides = {}));
+class LocalizedOnlyId {
+    get location() {
+        return this._location;
+    }
+    static fromJSON(json) {
+        const result = new LocalizedOnlyId();
+        result._location = Quadrilateral.fromJSON(json.location);
+        return result;
+    }
+}
+
+class RejectedId {
+    get location() {
+        return this._location;
+    }
+    get rejectionReason() {
+        return this._rejectionReason;
+    }
+    static fromJSON(json) {
+        const result = new RejectedId();
+        result._location = Quadrilateral.fromJSON(json.location);
+        result._rejectionReason = json.rejectionReason;
+        return result;
+    }
+}
+
+class StringComparisonCheck {
+    get vizValue() { return this.json.vizValue; }
+    get aamvaBarcodeValue() { return this.json.aamvaBarcodeValue; }
+    get checkResult() { return this.json.checkResult; }
+    get resultDescription() { return this.json.resultDescription; }
+    static fromJSON(json) {
+        const result = new StringComparisonCheck();
+        result.json = json;
+        return result;
+    }
+}
+
+var SupportedSides;
+(function (SupportedSides) {
+    SupportedSides["FrontOnly"] = "frontOnly";
+    SupportedSides["FrontAndBack"] = "frontAndBack";
+})(SupportedSides || (SupportedSides = {}));
 
 var TextHintPosition;
 (function (TextHintPosition) {
@@ -49,383 +134,47 @@ var TextHintPosition;
     TextHintPosition["BelowViewfinder"] = "belowViewfinder";
 })(TextHintPosition || (TextHintPosition = {}));
 
-var RejectionReason;
-(function (RejectionReason) {
-    RejectionReason["NotAcceptedDocumentType"] = "notAcceptedDocumentType";
-    RejectionReason["InvalidFormat"] = "invalidFormat";
-    RejectionReason["DocumentVoided"] = "documentVoided";
-    RejectionReason["Timeout"] = "timeout";
-    RejectionReason["SingleImageNotRecognized"] = "singleImageNotRecognized";
-    RejectionReason["DocumentExpired"] = "documentExpired";
-    RejectionReason["DocumentExpiresSoon"] = "documentExpiresSoon";
-    RejectionReason["NotRealIdCompliant"] = "notRealIdCompliant";
-    RejectionReason["HolderUnderage"] = "holderUnderage";
-    RejectionReason["ForgedAamvaBarcode"] = "forgedAamvaBarcode";
-    RejectionReason["InconsistentData"] = "inconsistentData";
-})(RejectionReason || (RejectionReason = {}));
+var VizMrzComparisonCheckResult;
+(function (VizMrzComparisonCheckResult) {
+    VizMrzComparisonCheckResult["Passed"] = "passed";
+    VizMrzComparisonCheckResult["Skipped"] = "skipped";
+    VizMrzComparisonCheckResult["Failed"] = "failed";
+})(VizMrzComparisonCheckResult || (VizMrzComparisonCheckResult = {}));
 
-var IdCaptureRegion;
-(function (IdCaptureRegion) {
-    IdCaptureRegion["Any"] = "any";
-    IdCaptureRegion["EuAndSchengen"] = "euAndSchengen";
-    IdCaptureRegion["Aruba"] = "aruba";
-    IdCaptureRegion["Afghanistan"] = "afghanistan";
-    IdCaptureRegion["Angola"] = "angola";
-    IdCaptureRegion["Anguilla"] = "anguilla";
-    IdCaptureRegion["AlandIslands"] = "alandIslands";
-    IdCaptureRegion["Albania"] = "albania";
-    IdCaptureRegion["Andorra"] = "andorra";
-    IdCaptureRegion["Uae"] = "uae";
-    IdCaptureRegion["Argentina"] = "argentina";
-    IdCaptureRegion["Armenia"] = "armenia";
-    IdCaptureRegion["AmericanSamoa"] = "americanSamoa";
-    IdCaptureRegion["Antarctica"] = "antarctica";
-    IdCaptureRegion["FrenchSouthernTerritories"] = "frenchSouthernTerritories";
-    IdCaptureRegion["AntiguaAndBarbuda"] = "antiguaAndBarbuda";
-    IdCaptureRegion["Australia"] = "australia";
-    IdCaptureRegion["Austria"] = "austria";
-    IdCaptureRegion["Azerbaijan"] = "azerbaijan";
-    IdCaptureRegion["Burundi"] = "burundi";
-    IdCaptureRegion["Belgium"] = "belgium";
-    IdCaptureRegion["Benin"] = "benin";
-    IdCaptureRegion["BonaireSintEustatiusAndSaba"] = "bonaireSintEustatiusAndSaba";
-    IdCaptureRegion["BurkinaFaso"] = "burkinaFaso";
-    IdCaptureRegion["Bangladesh"] = "bangladesh";
-    IdCaptureRegion["Bulgaria"] = "bulgaria";
-    IdCaptureRegion["Bahrain"] = "bahrain";
-    IdCaptureRegion["Bahamas"] = "bahamas";
-    IdCaptureRegion["BosniaHerzegovina"] = "bosniaHerzegovina";
-    IdCaptureRegion["SaintBarthelemy"] = "saintBarthelemy";
-    IdCaptureRegion["Belarus"] = "belarus";
-    IdCaptureRegion["Belize"] = "belize";
-    IdCaptureRegion["Bermuda"] = "bermuda";
-    IdCaptureRegion["Bolivia"] = "bolivia";
-    IdCaptureRegion["Brazil"] = "brazil";
-    IdCaptureRegion["Barbados"] = "barbados";
-    IdCaptureRegion["BruneiDarussalam"] = "bruneiDarussalam";
-    IdCaptureRegion["Bhutan"] = "bhutan";
-    IdCaptureRegion["BouvetIsland"] = "bouvetIsland";
-    IdCaptureRegion["Botswana"] = "botswana";
-    IdCaptureRegion["Car"] = "car";
-    IdCaptureRegion["Canada"] = "canada";
-    IdCaptureRegion["CocosIslands"] = "cocosIslands";
-    IdCaptureRegion["Switzerland"] = "switzerland";
-    IdCaptureRegion["Chile"] = "chile";
-    IdCaptureRegion["China"] = "china";
-    IdCaptureRegion["CoteIvoire"] = "coteIvoire";
-    IdCaptureRegion["Cameroon"] = "cameroon";
-    IdCaptureRegion["DemocraticRepublicOfCongo"] = "democraticRepublicOfCongo";
-    IdCaptureRegion["Congo"] = "congo";
-    IdCaptureRegion["CookIslands"] = "cookIslands";
-    IdCaptureRegion["Colombia"] = "colombia";
-    IdCaptureRegion["Comoros"] = "comoros";
-    IdCaptureRegion["CaboVerde"] = "caboVerde";
-    IdCaptureRegion["CostaRica"] = "costaRica";
-    IdCaptureRegion["Cuba"] = "cuba";
-    IdCaptureRegion["Curacao"] = "curacao";
-    IdCaptureRegion["ChristmasIsland"] = "christmasIsland";
-    IdCaptureRegion["CaymanIslands"] = "caymanIslands";
-    IdCaptureRegion["Cyprus"] = "cyprus";
-    IdCaptureRegion["Czechia"] = "czechia";
-    IdCaptureRegion["Germany"] = "germany";
-    IdCaptureRegion["Djibouti"] = "djibouti";
-    IdCaptureRegion["Dominica"] = "dominica";
-    IdCaptureRegion["Denmark"] = "denmark";
-    IdCaptureRegion["DominicanRepublic"] = "dominicanRepublic";
-    IdCaptureRegion["Algeria"] = "algeria";
-    IdCaptureRegion["Ecuador"] = "ecuador";
-    IdCaptureRegion["Egypt"] = "egypt";
-    IdCaptureRegion["Eritrea"] = "eritrea";
-    IdCaptureRegion["WesternSahara"] = "westernSahara";
-    IdCaptureRegion["Spain"] = "spain";
-    IdCaptureRegion["Estonia"] = "estonia";
-    IdCaptureRegion["Ethiopia"] = "ethiopia";
-    IdCaptureRegion["Finland"] = "finland";
-    IdCaptureRegion["Fiji"] = "fiji";
-    IdCaptureRegion["FalklandIslands"] = "falklandIslands";
-    IdCaptureRegion["France"] = "france";
-    IdCaptureRegion["FaroeIslands"] = "faroeIslands";
-    IdCaptureRegion["Micronesia"] = "micronesia";
-    IdCaptureRegion["Gabon"] = "gabon";
-    IdCaptureRegion["Uk"] = "uk";
-    IdCaptureRegion["Georgia"] = "georgia";
-    IdCaptureRegion["Guernsey"] = "guernsey";
-    IdCaptureRegion["Ghana"] = "ghana";
-    IdCaptureRegion["Gibraltar"] = "gibraltar";
-    IdCaptureRegion["Guinea"] = "guinea";
-    IdCaptureRegion["Guadeloupe"] = "guadeloupe";
-    IdCaptureRegion["Gambia"] = "gambia";
-    IdCaptureRegion["GuineaBissau"] = "guineaBissau";
-    IdCaptureRegion["EquatorialGuinea"] = "equatorialGuinea";
-    IdCaptureRegion["Greece"] = "greece";
-    IdCaptureRegion["Grenada"] = "grenada";
-    IdCaptureRegion["Greenland"] = "greenland";
-    IdCaptureRegion["Guatemala"] = "guatemala";
-    IdCaptureRegion["FrenchGuiana"] = "frenchGuiana";
-    IdCaptureRegion["Guam"] = "guam";
-    IdCaptureRegion["Guyana"] = "guyana";
-    IdCaptureRegion["HongKong"] = "hongKong";
-    IdCaptureRegion["HeardIslandAndMcDonaldIslands"] = "heardIslandAndMcDonaldIslands";
-    IdCaptureRegion["Honduras"] = "honduras";
-    IdCaptureRegion["Croatia"] = "croatia";
-    IdCaptureRegion["Haiti"] = "haiti";
-    IdCaptureRegion["Hungary"] = "hungary";
-    IdCaptureRegion["Indonesia"] = "indonesia";
-    IdCaptureRegion["IsleOfMan"] = "isleOfMan";
-    IdCaptureRegion["India"] = "india";
-    IdCaptureRegion["BritishIndianOceanTerritory"] = "britishIndianOceanTerritory";
-    IdCaptureRegion["Ireland"] = "ireland";
-    IdCaptureRegion["Iran"] = "iran";
-    IdCaptureRegion["Iraq"] = "iraq";
-    IdCaptureRegion["Iceland"] = "iceland";
-    IdCaptureRegion["Israel"] = "israel";
-    IdCaptureRegion["Italy"] = "italy";
-    IdCaptureRegion["Jamaica"] = "jamaica";
-    IdCaptureRegion["Jersey"] = "jersey";
-    IdCaptureRegion["Jordan"] = "jordan";
-    IdCaptureRegion["Japan"] = "japan";
-    IdCaptureRegion["Kazakhstan"] = "kazakhstan";
-    IdCaptureRegion["Kenya"] = "kenya";
-    IdCaptureRegion["Kyrgyzstan"] = "kyrgyzstan";
-    IdCaptureRegion["Cambodia"] = "cambodia";
-    IdCaptureRegion["Kiribati"] = "kiribati";
-    IdCaptureRegion["SaintKittsAndNevis"] = "saintKittsAndNevis";
-    IdCaptureRegion["SouthKorea"] = "southKorea";
-    IdCaptureRegion["Kuwait"] = "kuwait";
-    IdCaptureRegion["Lao"] = "lao";
-    IdCaptureRegion["Lebanon"] = "lebanon";
-    IdCaptureRegion["Liberia"] = "liberia";
-    IdCaptureRegion["Libya"] = "libya";
-    IdCaptureRegion["SaintLucia"] = "saintLucia";
-    IdCaptureRegion["Liechtenstein"] = "liechtenstein";
-    IdCaptureRegion["SriLanka"] = "sriLanka";
-    IdCaptureRegion["Lesotho"] = "lesotho";
-    IdCaptureRegion["Lithuania"] = "lithuania";
-    IdCaptureRegion["Luxembourg"] = "luxembourg";
-    IdCaptureRegion["Latvia"] = "latvia";
-    IdCaptureRegion["Macao"] = "macao";
-    IdCaptureRegion["FrenchSaintMartin"] = "frenchSaintMartin";
-    IdCaptureRegion["Morocco"] = "morocco";
-    IdCaptureRegion["Monaco"] = "monaco";
-    IdCaptureRegion["Moldova"] = "moldova";
-    IdCaptureRegion["Madagascar"] = "madagascar";
-    IdCaptureRegion["Maldives"] = "maldives";
-    IdCaptureRegion["Mexico"] = "mexico";
-    IdCaptureRegion["MarshallIslands"] = "marshallIslands";
-    IdCaptureRegion["NorthMacedonia"] = "northMacedonia";
-    IdCaptureRegion["Mali"] = "mali";
-    IdCaptureRegion["Malta"] = "malta";
-    IdCaptureRegion["Myanmar"] = "myanmar";
-    IdCaptureRegion["Montenegro"] = "montenegro";
-    IdCaptureRegion["Mongolia"] = "mongolia";
-    IdCaptureRegion["NorthernMarianaIslands"] = "northernMarianaIslands";
-    IdCaptureRegion["Mozambique"] = "mozambique";
-    IdCaptureRegion["Mauritania"] = "mauritania";
-    IdCaptureRegion["Montserrat"] = "montserrat";
-    IdCaptureRegion["Martinique"] = "martinique";
-    IdCaptureRegion["Mauritius"] = "mauritius";
-    IdCaptureRegion["Malawi"] = "malawi";
-    IdCaptureRegion["Malaysia"] = "malaysia";
-    IdCaptureRegion["Mayotte"] = "mayotte";
-    IdCaptureRegion["Namibia"] = "namibia";
-    IdCaptureRegion["NewCaledonia"] = "newCaledonia";
-    IdCaptureRegion["Niger"] = "niger";
-    IdCaptureRegion["NorfolkIsland"] = "norfolkIsland";
-    IdCaptureRegion["Nigeria"] = "nigeria";
-    IdCaptureRegion["Nicaragua"] = "nicaragua";
-    IdCaptureRegion["Niue"] = "niue";
-    IdCaptureRegion["Netherlands"] = "netherlands";
-    IdCaptureRegion["Norway"] = "norway";
-    IdCaptureRegion["Nepal"] = "nepal";
-    IdCaptureRegion["Nauru"] = "nauru";
-    IdCaptureRegion["NewZealand"] = "newZealand";
-    IdCaptureRegion["Oman"] = "oman";
-    IdCaptureRegion["Pakistan"] = "pakistan";
-    IdCaptureRegion["Panama"] = "panama";
-    IdCaptureRegion["Pitcairn"] = "pitcairn";
-    IdCaptureRegion["Peru"] = "peru";
-    IdCaptureRegion["Philippines"] = "philippines";
-    IdCaptureRegion["Palau"] = "palau";
-    IdCaptureRegion["PapuaNewGuinea"] = "papuaNewGuinea";
-    IdCaptureRegion["Poland"] = "poland";
-    IdCaptureRegion["PuertoRico"] = "puertoRico";
-    IdCaptureRegion["NorthKorea"] = "northKorea";
-    IdCaptureRegion["Portugal"] = "portugal";
-    IdCaptureRegion["Paraguay"] = "paraguay";
-    IdCaptureRegion["Palestine"] = "palestine";
-    IdCaptureRegion["FrenchPolynesia"] = "frenchPolynesia";
-    IdCaptureRegion["Qatar"] = "qatar";
-    IdCaptureRegion["Reunion"] = "reunion";
-    IdCaptureRegion["Romania"] = "romania";
-    IdCaptureRegion["Russia"] = "russia";
-    IdCaptureRegion["Rwanda"] = "rwanda";
-    IdCaptureRegion["SaudiArabia"] = "saudiArabia";
-    IdCaptureRegion["Sudan"] = "sudan";
-    IdCaptureRegion["Senegal"] = "senegal";
-    IdCaptureRegion["Singapore"] = "singapore";
-    IdCaptureRegion["SouthGeorgiaAndTheSouthSandwichIslands"] = "southGeorgiaAndTheSouthSandwichIslands";
-    IdCaptureRegion["SaintHelena"] = "saintHelena";
-    IdCaptureRegion["SvalbardAndJanMayen"] = "svalbardAndJanMayen";
-    IdCaptureRegion["SolomonIslands"] = "solomonIslands";
-    IdCaptureRegion["SierraLeone"] = "sierraLeone";
-    IdCaptureRegion["ElSalvador"] = "elSalvador";
-    IdCaptureRegion["SanMarino"] = "sanMarino";
-    IdCaptureRegion["Somalia"] = "somalia";
-    IdCaptureRegion["SaintPierreAndMiquelon"] = "saintPierreAndMiquelon";
-    IdCaptureRegion["Serbia"] = "serbia";
-    IdCaptureRegion["SouthSudan"] = "southSudan";
-    IdCaptureRegion["SaoTomeAndPrincipe"] = "saoTomeAndPrincipe";
-    IdCaptureRegion["Suriname"] = "suriname";
-    IdCaptureRegion["Slovakia"] = "slovakia";
-    IdCaptureRegion["Slovenia"] = "slovenia";
-    IdCaptureRegion["Sweden"] = "sweden";
-    IdCaptureRegion["Eswatini"] = "eswatini";
-    IdCaptureRegion["DutchSintMaarten"] = "dutchSintMaarten";
-    IdCaptureRegion["Seychelles"] = "seychelles";
-    IdCaptureRegion["Syria"] = "syria";
-    IdCaptureRegion["TurksAndCaicosIslands"] = "turksAndCaicosIslands";
-    IdCaptureRegion["Chad"] = "chad";
-    IdCaptureRegion["Togo"] = "togo";
-    IdCaptureRegion["Thailand"] = "thailand";
-    IdCaptureRegion["Tajikistan"] = "tajikistan";
-    IdCaptureRegion["Tokelau"] = "tokelau";
-    IdCaptureRegion["Turkmenistan"] = "turkmenistan";
-    IdCaptureRegion["TimorLeste"] = "timorLeste";
-    IdCaptureRegion["Tonga"] = "tonga";
-    IdCaptureRegion["TrinidadAndTobago"] = "trinidadAndTobago";
-    IdCaptureRegion["Tunisia"] = "tunisia";
-    IdCaptureRegion["Turkey"] = "turkey";
-    IdCaptureRegion["Tuvalu"] = "tuvalu";
-    IdCaptureRegion["Taiwan"] = "taiwan";
-    IdCaptureRegion["Tanzania"] = "tanzania";
-    IdCaptureRegion["Uganda"] = "uganda";
-    IdCaptureRegion["Ukraine"] = "ukraine";
-    IdCaptureRegion["UsMinorOutlyingIslands"] = "usMinorOutlyingIslands";
-    IdCaptureRegion["Uruguay"] = "uruguay";
-    IdCaptureRegion["Us"] = "us";
-    IdCaptureRegion["Uzbekistan"] = "uzbekistan";
-    IdCaptureRegion["HolySee"] = "holySee";
-    IdCaptureRegion["SaintVincentAndTheGrenadines"] = "saintVincentAndTheGrenadines";
-    IdCaptureRegion["Venezuela"] = "venezuela";
-    IdCaptureRegion["BritishVirginIslands"] = "britishVirginIslands";
-    IdCaptureRegion["UsVirginIslands"] = "usVirginIslands";
-    IdCaptureRegion["Vietnam"] = "vietnam";
-    IdCaptureRegion["Vanuatu"] = "vanuatu";
-    IdCaptureRegion["WallisAndFutuna"] = "wallisAndFutuna";
-    IdCaptureRegion["Samoa"] = "samoa";
-    IdCaptureRegion["Kosovo"] = "kosovo";
-    IdCaptureRegion["Yemen"] = "yemen";
-    IdCaptureRegion["SouthAfrica"] = "southAfrica";
-    IdCaptureRegion["Zambia"] = "zambia";
-    IdCaptureRegion["Zimbabwe"] = "zimbabwe";
-})(IdCaptureRegion || (IdCaptureRegion = {}));
-
-var RegionSpecificSubtype;
-(function (RegionSpecificSubtype) {
-    RegionSpecificSubtype["UsBorderCrossingCard"] = "usBorderCrossingCard";
-    RegionSpecificSubtype["ChinaExitEntryPermit"] = "chinaExitEntryPermit";
-    RegionSpecificSubtype["UsGlobalEntryCard"] = "usGlobalEntryCard";
-    RegionSpecificSubtype["ChinaMainlandTravelPermitTaiwan"] = "chinaMainlandTravelPermitTaiwan";
-    RegionSpecificSubtype["UsNexusCard"] = "usNexusCard";
-    RegionSpecificSubtype["ChinaMainlandTravelPermitHongKongMacau"] = "chinaMainlandTravelPermitHongKongMacau";
-    RegionSpecificSubtype["ApecBusinessTravelCard"] = "apecBusinessTravelCard";
-    RegionSpecificSubtype["PakistanAfghanCitizenCard"] = "pakistanAfghanCitizenCard";
-    RegionSpecificSubtype["SingaporeFinCard"] = "singaporeFinCard";
-    RegionSpecificSubtype["UsGreenCard"] = "usGreenCard";
-    RegionSpecificSubtype["MalaysiaIkad"] = "malaysiaIkad";
-    RegionSpecificSubtype["MalaysiaMykad"] = "malaysiaMykad";
-    RegionSpecificSubtype["MalaysiaMypr"] = "malaysiaMypr";
-    RegionSpecificSubtype["MexicoConsularVoterId"] = "mexicoConsularVoterId";
-    RegionSpecificSubtype["GermanyEid"] = "germanyEid";
-    RegionSpecificSubtype["UsCommonAccessCard"] = "usCommonAccessCard";
-    RegionSpecificSubtype["PhilippinesMultipurposeId"] = "philippinesMultipurposeId";
-    RegionSpecificSubtype["MalaysiaMykas"] = "malaysiaMykas";
-    RegionSpecificSubtype["MalaysiaMykid"] = "malaysiaMykid";
-    RegionSpecificSubtype["MalaysiaMytentera"] = "malaysiaMytentera";
-    RegionSpecificSubtype["MexicoProfessionalId"] = "mexicoProfessionalId";
-    RegionSpecificSubtype["MalaysiaRefugeeId"] = "malaysiaRefugeeId";
-    RegionSpecificSubtype["CanadaTribalId"] = "canadaTribalId";
-    RegionSpecificSubtype["UsUniformedServicesId"] = "usUniformedServicesId";
-    RegionSpecificSubtype["UsVeteranId"] = "usVeteranId";
-    RegionSpecificSubtype["PhilippinesWorkPermit"] = "philippinesWorkPermit";
-    RegionSpecificSubtype["SingaporeWorkPermit"] = "singaporeWorkPermit";
-    RegionSpecificSubtype["UsWorkPermit"] = "usWorkPermit";
-    RegionSpecificSubtype["PhilippinesSocialSecurityCard"] = "philippinesSocialSecurityCard";
-    RegionSpecificSubtype["SwedenSocialSecurityCard"] = "swedenSocialSecurityCard";
-    RegionSpecificSubtype["CanadaSocialSecurityCard"] = "canadaSocialSecurityCard";
-    RegionSpecificSubtype["UsSocialSecurityCard"] = "usSocialSecurityCard";
-    RegionSpecificSubtype["BelgiumMinorsId"] = "belgiumMinorsId";
-    RegionSpecificSubtype["ColombiaMinorsId"] = "colombiaMinorsId";
-    RegionSpecificSubtype["PeruMinorsId"] = "peruMinorsId";
-    RegionSpecificSubtype["BoliviaMinorsId"] = "boliviaMinorsId";
-    RegionSpecificSubtype["HungaryAddressCard"] = "hungaryAddressCard";
-    RegionSpecificSubtype["UkAsylumRequest"] = "ukAsylumRequest";
-    RegionSpecificSubtype["CanadaCitizenshipCertificate"] = "canadaCitizenshipCertificate";
-    RegionSpecificSubtype["SingaporeEmploymentPass"] = "singaporeEmploymentPass";
-    RegionSpecificSubtype["CanadaMinorsPublicServicesCard"] = "canadaMinorsPublicServicesCard";
-    RegionSpecificSubtype["MalaysiaMypolis"] = "malaysiaMypolis";
-    RegionSpecificSubtype["PhilippinesNbiClearance"] = "philippinesNbiClearance";
-    RegionSpecificSubtype["IndiaPanCard"] = "indiaPanCard";
-    RegionSpecificSubtype["PhilippinesPostalId"] = "philippinesPostalId";
-    RegionSpecificSubtype["PakistanProofOfRegistration"] = "pakistanProofOfRegistration";
-    RegionSpecificSubtype["SingaporeSPass"] = "singaporeSPass";
-    RegionSpecificSubtype["SwedenSisId"] = "swedenSisId";
-    RegionSpecificSubtype["ColombiaTemporaryProtectionPermit"] = "colombiaTemporaryProtectionPermit";
-    RegionSpecificSubtype["UsTwicCard"] = "usTwicCard";
-    RegionSpecificSubtype["UsWeaponPermit"] = "usWeaponPermit";
-    RegionSpecificSubtype["CanadaWeaponPermit"] = "canadaWeaponPermit";
-    RegionSpecificSubtype["IrelandPublicServicesCard"] = "irelandPublicServicesCard";
-    RegionSpecificSubtype["CanadaPublicServicesCard"] = "canadaPublicServicesCard";
-    RegionSpecificSubtype["PakistanConsularId"] = "pakistanConsularId";
-    RegionSpecificSubtype["GuatemalaConsularId"] = "guatemalaConsularId";
-    RegionSpecificSubtype["MexicoConsularId"] = "mexicoConsularId";
-    RegionSpecificSubtype["PhilippinesTaxId"] = "philippinesTaxId";
-    RegionSpecificSubtype["MexicoTaxId"] = "mexicoTaxId";
-    RegionSpecificSubtype["ChinaOneWayPermit"] = "chinaOneWayPermit";
-    RegionSpecificSubtype["UsMedicalMarijuanaCard"] = "usMedicalMarijuanaCard";
-    RegionSpecificSubtype["UsMunicipalId"] = "usMunicipalId";
-    RegionSpecificSubtype["AustraliaAsicCard"] = "australiaAsicCard";
-    RegionSpecificSubtype["UaeVehicleRegistrationCard"] = "uaeVehicleRegistrationCard";
-})(RegionSpecificSubtype || (RegionSpecificSubtype = {}));
-
-var IdSide;
-(function (IdSide) {
-    IdSide["Front"] = "front";
-    IdSide["Back"] = "back";
-})(IdSide || (IdSide = {}));
-
-class IdImages {
-    constructor() {
-        this.json = null;
+class VizMrzDateComparisonCheck {
+    get vizValue() {
+        return DateResult.fromJSON(this.json.vizValue);
     }
-    get face() { var _a, _b, _c; return (_c = (_b = (_a = this.json) === null || _a === undefined ? undefined : _a.front) === null || _b === undefined ? undefined : _b.face) !== null && _c !== undefined ? _c : null; }
-    get frame() { var _a, _b, _c; return (_c = (_b = (_a = this.json) === null || _a === undefined ? undefined : _a.front) === null || _b === undefined ? undefined : _b.frame) !== null && _c !== undefined ? _c : null; }
-    getFrame(side) {
-        var _a, _b, _c, _d, _e, _f;
-        switch (side) {
-            case IdSide.Front:
-                return (_c = (_b = (_a = this.json) === null || _a === undefined ? undefined : _a.front) === null || _b === undefined ? undefined : _b.frame) !== null && _c !== undefined ? _c : null;
-            case IdSide.Back:
-                return (_f = (_e = (_d = this.json) === null || _d === undefined ? undefined : _d.back) === null || _e === undefined ? undefined : _e.frame) !== null && _f !== undefined ? _f : null;
-        }
+    get mrzValue() {
+        return DateResult.fromJSON(this.json.mrzValue);
     }
-    getCroppedDocument(side) {
-        var _a, _b, _c, _d, _e, _f;
-        switch (side) {
-            case IdSide.Front:
-                return (_c = (_b = (_a = this.json) === null || _a === undefined ? undefined : _a.front) === null || _b === undefined ? undefined : _b.croppedDocument) !== null && _c !== undefined ? _c : null;
-            case IdSide.Back:
-                return (_f = (_e = (_d = this.json) === null || _d === undefined ? undefined : _d.back) === null || _e === undefined ? undefined : _e.croppedDocument) !== null && _f !== undefined ? _f : null;
-        }
-    }
+    get checkResult() { return this.json.checkResult; }
+    get resultDescription() { return this.json.resultDescription; }
     static fromJSON(json) {
-        const result = new IdImages();
-        if (json != null) {
-            result.json = json;
-        }
+        const result = new VizMrzDateComparisonCheck();
+        result.json = json;
         return result;
     }
 }
+
+class VizMrzStringComparisonCheck {
+    get vizValue() { return this.json.vizValue; }
+    get mrzValue() { return this.json.mrzValue; }
+    get checkResult() { return this.json.checkResult; }
+    get resultDescription() { return this.json.resultDescription; }
+    static fromJSON(json) {
+        const result = new VizMrzStringComparisonCheck();
+        result.json = json;
+        return result;
+    }
+}
+
+var RejectionReason;
+(function (RejectionReason) {
+    RejectionReason["DocumentTypeNotEnabled"] = "documentTypeNotEnabled";
+    RejectionReason["IncorrectBarcodeFormat"] = "incorrectBarcodeFormat";
+    RejectionReason["DocumentVoided"] = "documentVoided";
+})(RejectionReason || (RejectionReason = {}));
 
 function getIdDefaults() {
     return FactoryMaker.getInstance('IdDefaults');
@@ -436,6 +185,7 @@ function parseIdDefaults(jsonDefaults) {
             Feedback: {
                 idCaptured: Feedback.fromJSON(JSON.parse(jsonDefaults.IdCaptureFeedback).idCaptured),
                 idRejected: Feedback.fromJSON(JSON.parse(jsonDefaults.IdCaptureFeedback).idRejected),
+                idCaptureTimeout: Feedback.fromJSON(JSON.parse(jsonDefaults.IdCaptureFeedback).idCaptureTimeout),
             },
             RecommendedCameraSettings: CameraSettings
                 .fromJSON(jsonDefaults.RecommendedCameraSettings),
@@ -465,7 +215,6 @@ function parseIdDefaults(jsonDefaults) {
             IdCaptureSettings: {
                 anonymizationMode: jsonDefaults.IdCaptureSettings.anonymizationMode,
                 rejectVoidedIds: jsonDefaults.IdCaptureSettings.rejectVoidedIds,
-                decodeBackOfEuropeanDrivingLicense: jsonDefaults.IdCaptureSettings.decodeBackOfEuropeanDrivingLicense,
             },
         },
     };
@@ -475,6 +224,46 @@ function parseIdDefaults(jsonDefaults) {
 function loadIdDefaults(jsonDefaults) {
     const idDefaults = parseIdDefaults(jsonDefaults);
     FactoryMaker.bindInstanceIfNotExists('IdDefaults', idDefaults);
+}
+
+class AAMVABarcodeResult {
+    get aamvaVersion() { return this.json.aamvaVersion; }
+    get aliasFamilyName() { return this.json.aliasFamilyName; }
+    get aliasGivenName() { return this.json.aliasGivenName; }
+    get aliasSuffixName() { return this.json.aliasSuffixName; }
+    get isRealId() { return this.json.isRealId; }
+    get driverNamePrefix() { return this.json.driverNamePrefix; }
+    get driverNameSuffix() { return this.json.driverNameSuffix; }
+    get endorsementsCode() { return this.json.endorsementsCode; }
+    get eyeColor() { return this.json.eyeColor; }
+    get firstNameWithoutMiddleName() { return this.json.firstNameWithoutMiddleName; }
+    get firstNameTruncation() { return this.json.firstNameTruncation; }
+    get hairColor() { return this.json.hairColor; }
+    get heightCm() { return this.json.heightCm; }
+    get heightInch() { return this.json.heightInch; }
+    get iIN() { return this.json.iin; }
+    get issuingJurisdiction() { return this.json.issuingJurisdiction; }
+    get issuingJurisdictionIso() { return this.json.issuingJurisdictionIso; }
+    get jurisdictionVersion() { return this.json.jurisdictionVersion; }
+    get lastNameTruncation() { return this.json.lastNameTruncation; }
+    get middleName() { return this.json.middleName; }
+    get middleNameTruncation() { return this.json.middleNameTruncation; }
+    get placeOfBirth() { return this.json.placeOfBirth; }
+    get race() { return this.json.race; }
+    get restrictionsCode() { return this.json.restrictionsCode; }
+    get vehicleClass() { return this.json.vehicleClass; }
+    get weightKg() { return this.json.weightKg; }
+    get weightLbs() { return this.json.weightLbs; }
+    get cardRevisionDate() {
+        return DateResult.fromJSON(this.json.cardRevisionDate);
+    }
+    get documentDiscriminatorNumber() { return this.json.documentDiscriminatorNumber; }
+    get barcodeDataElements() { return this.json.barcodeDataElements; }
+    static fromJSON(json) {
+        const result = new AAMVABarcodeResult();
+        result.json = json;
+        return result;
+    }
 }
 
 var AamvaBarcodeVerificationStatus;
@@ -524,7 +313,7 @@ LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
 OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 ***************************************************************************** */
-/* global Reflect, Promise, SuppressedError, Symbol, Iterator */
+/* global Reflect, Promise, SuppressedError, Symbol */
 
 
 function __decorate(decorators, target, key, desc) {
@@ -532,16 +321,6 @@ function __decorate(decorators, target, key, desc) {
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
-}
-
-function __awaiter(thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
 }
 
 typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
@@ -561,17 +340,17 @@ class IdCaptureController extends BaseController {
     reset() {
         return this._proxy.resetMode();
     }
+    verifyCapturedId(capturedId) {
+        return this._proxy.verifyCapturedId(capturedId);
+    }
     createContextForBarcodeVerification(context) {
         return this._proxy.createContextForBarcodeVerification(JSON.stringify(context.toJSON()));
     }
     verifyCapturedIdAsync(capturedId) {
-        return __awaiter(this, undefined, undefined, function* () {
-            const result = yield this._proxy.verifyCapturedIdAsync(capturedId);
-            if (result == null) {
-                return null;
-            }
-            return result.data;
-        });
+        return this._proxy.verifyCapturedIdAsync(capturedId);
+    }
+    verifyVizMrz(capturedId) {
+        return this._proxy.verifyVizMrz(capturedId);
     }
     setModeEnabledState(enabled) {
         this._proxy.setModeEnabledState(enabled);
@@ -590,12 +369,97 @@ class IdCaptureController extends BaseController {
     }
 }
 
-var IdCaptureListenerEvents;
-(function (IdCaptureListenerEvents) {
-    IdCaptureListenerEvents["inCallback"] = "IdCaptureListener.inCallback";
-    IdCaptureListenerEvents["didCapture"] = "IdCaptureListener.didCaptureId";
-    IdCaptureListenerEvents["didReject"] = "IdCaptureListener.didRejectId";
-})(IdCaptureListenerEvents || (IdCaptureListenerEvents = {}));
+class ApecBusinessTravelCardMrzResult {
+    get documentCode() { return this.json.documentCode; }
+    get capturedMrz() { return this.json.capturedMrz; }
+    get passportIssuerIso() { return this.json.passportIssuerIso; }
+    get passportNumber() { return this.json.passportNumber; }
+    get passportDateOfExpiry() {
+        return DateResult.fromJSON(this.json.passportDateOfExpiry);
+    }
+    static fromJSON(json) {
+        const result = new ApecBusinessTravelCardMrzResult();
+        result.json = json;
+        return result;
+    }
+}
+
+class ArgentinaIdBarcodeResult {
+    get personalIdNumber() { return this.json.personalIdNumber; }
+    get documentCopy() { return this.json.documentCopy; }
+    static fromJSON(json) {
+        const result = new ArgentinaIdBarcodeResult();
+        result.json = json;
+        return result;
+    }
+}
+
+class ChinaExitEntryPermitMRZResult {
+    get documentCode() { return this.json.documentCode; }
+    get capturedMrz() { return this.json.capturedMrz; }
+    static fromJSON(json) {
+        const result = new ChinaExitEntryPermitMRZResult();
+        result.json = json;
+        return result;
+    }
+}
+
+class ChinaMainlandTravelPermitMRZResult {
+    get documentCode() { return this.json.documentCode; }
+    get capturedMrz() { return this.json.capturedMrz; }
+    get personalIdNumber() { return this.json.personalIdNumber; }
+    get renewalTimes() { return this.json.renewalTimes; }
+    get fullNameSimplifiedChinese() { return this.json.fullNameSimplifiedChinese; }
+    get omittedCharacterCountInGBKName() { return this.json.omittedCharacterCountInGBKName; }
+    get omittedNameCount() { return this.json.omittedNameCount; }
+    get issuingAuthorityCode() { return this.json.issuingAuthorityCode; }
+    static fromJSON(json) {
+        const result = new ChinaMainlandTravelPermitMRZResult();
+        result.json = json;
+        return result;
+    }
+}
+
+class ChinaOneWayPermitBackMrzResult {
+    get documentCode() { return this.json.documentCode; }
+    get namesAreTruncated() { return this.json.namesAreTruncated; }
+    get capturedMrz() { return this.json.capturedMrz; }
+    static fromJSON(json) {
+        const result = new ChinaOneWayPermitBackMrzResult();
+        result.json = json;
+        return result;
+    }
+}
+
+class ChinaOneWayPermitFrontMrzResult {
+    get documentCode() { return this.json.documentCode; }
+    get capturedMrz() { return this.json.capturedMrz; }
+    get fullNameSimplifiedChinese() { return this.json.fullNameSimplifiedChinese; }
+    static fromJSON(json) {
+        const result = new ChinaOneWayPermitFrontMrzResult();
+        result.json = json;
+        return result;
+    }
+}
+
+class ColombiaDlBarcodeResult {
+    get categories() { return this.json.categories; }
+    get identificationType() { return this.json.identificationType; }
+    static fromJSON(json) {
+        const result = new ColombiaDlBarcodeResult();
+        result.json = json;
+        return result;
+    }
+}
+
+class ColombiaIdBarcodeResult {
+    get bloodType() { return this.json.bloodType; }
+    static fromJSON(json) {
+        const result = new ColombiaIdBarcodeResult();
+        result.json = json;
+        return result;
+    }
+}
 
 class MRZResult {
     get documentCode() { return this.json.documentCode; }
@@ -603,19 +467,128 @@ class MRZResult {
     get optional() { return this.json.optional; }
     get optional1() { return this.json.optional1; }
     get capturedMrz() { return this.json.capturedMrz; }
-    get personalIdNumber() { return this.json.personalIdNumber; }
-    get renewalTimes() { return this.json.renewalTimes; }
-    get fullNameSimplifiedChinese() { return this.json.fullNameSimplifiedChinese; }
-    get omittedCharacterCountInGbkName() { return this.json.omittedCharacterCountInGbkName; }
-    get omittedNameCount() { return this.json.omittedNameCount; }
-    get issuingAuthorityCode() { return this.json.issuingAuthorityCode; }
-    get passportIssuerIso() { return this.json.passportIssuerIso; }
-    get passportNumber() { return this.json.passportNumber; }
-    get passportDateOfExpiry() {
-        return DateResult.fromJSON(this.json.passportDateOfExpiry);
-    }
     static fromJSON(json) {
         const result = new MRZResult();
+        result.json = json;
+        return result;
+    }
+}
+
+class ProfessionalDrivingPermit {
+    get dateOfExpiry() { return DateResult.fromJSON(this.json.dateOfExpiry); }
+    get codes() { return this.json.codes; }
+    static fromJSON(json) {
+        if (json === null) {
+            return null;
+        }
+        const object = new ProfessionalDrivingPermit();
+        object.json = json;
+        return object;
+    }
+}
+
+class VehicleRestriction {
+    get vehicleCode() { return this.json.vehicleCode; }
+    get vehicleRestriction() { return this.json.vehicleRestriction; }
+    get dateOfIssue() { return DateResult.fromJSON(this.json.dateOfIssue); }
+    static fromJSON(json) {
+        if (json === null) {
+            return null;
+        }
+        const object = new VehicleRestriction();
+        object.json = json;
+        return object;
+    }
+}
+
+class SouthAfricaDlBarcodeResult {
+    get version() { return this.json.version; }
+    get licenseCountryOfIssue() { return this.json.licenseCountryOfIssue; }
+    get personalIdNumber() { return this.json.personalIdNumber; }
+    get personalIdNumberType() { return this.json.personalIdNumberType; }
+    get documentCopy() { return this.json.documentCopy; }
+    get driverRestrictionCodes() { return this.json.driverRestrictionCodes; }
+    get professionalDrivingPermit() {
+        return ProfessionalDrivingPermit.fromJSON(this.json.professionalDrivingPermit);
+    }
+    get vehicleRestrictions() {
+        return this.json.vehicleRestrictions.map(json => VehicleRestriction.fromJSON(json));
+    }
+    static fromJSON(json) {
+        const result = new SouthAfricaDlBarcodeResult();
+        result.json = json;
+        return result;
+    }
+}
+
+class SouthAfricaIdBarcodeResult {
+    get countryOfBirth() { return this.json.countryOfBirth; }
+    get countryOfBirthIso() { return this.json.countryOfBirthIso; }
+    get citizenshipStatus() { return this.json.citizenshipStatus; }
+    get personalIdNumber() { return this.json.personalIdNumber; }
+    static fromJSON(json) {
+        const result = new SouthAfricaIdBarcodeResult();
+        result.json = json;
+        return result;
+    }
+}
+
+class USUniformedServicesBarcodeResult {
+    get bloodType() { return this.json.bloodType; }
+    get branchOfService() { return this.json.branchOfService; }
+    get champusEffectiveDate() {
+        return DateResult.fromJSON(this.json.champusEffectiveDate);
+    }
+    get champusExpiryDate() {
+        return DateResult.fromJSON(this.json.champusExpiryDate);
+    }
+    get civilianHealthCareFlagCode() { return this.json.civilianHealthCareFlagCode; }
+    get civilianHealthCareFlagDescription() { return this.json.civilianHealthCareFlagDescription; }
+    get commissaryFlagCode() { return this.json.commissaryFlagCode; }
+    get commissaryFlagDescription() { return this.json.commissaryFlagDescription; }
+    get deersDependentSuffixCode() { return this.json.deersDependentSuffixCode; }
+    get deersDependentSuffixDescription() { return this.json.deersDependentSuffixDescription; }
+    get directCareFlagCode() { return this.json.directCareFlagCode; }
+    get directCareFlagDescription() { return this.json.directCareFlagDescription; }
+    get exchangeFlagCode() { return this.json.exchangeFlagCode; }
+    get exchangeFlagDescription() { return this.json.exchangeFlagDescription; }
+    get eyeColor() { return this.json.eyeColor; }
+    get familySequenceNumber() { return this.json.familySequenceNumber; }
+    get formNumber() { return this.json.formNumber; }
+    get genevaConventionCategory() { return this.json.genevaConventionCategory; }
+    get hairColor() { return this.json.hairColor; }
+    get height() { return this.json.height; }
+    get jpegData() { return this.json.jpegData; }
+    get mwrFlagCode() { return this.json.mwrFlagCode; }
+    get mwrFlagDescription() { return this.json.mwrFlagDescription; }
+    get payGrade() { return this.json.payGrade; }
+    get personDesignatorDocument() { return this.json.personDesignatorDocument; }
+    get rank() { return this.json.rank; }
+    get relationshipCode() { return this.json.relationshipCode; }
+    get relationshipDescription() { return this.json.relationshipDescription; }
+    get securityCode() { return this.json.securityCode; }
+    get serviceCode() { return this.json.serviceCode; }
+    get sponsorFlag() { return this.json.sponsorFlag; }
+    get sponsorName() { return this.json.sponsorName; }
+    get sponsorPersonDesignatorIdentifier() {
+        return this.json.sponsorPersonDesignatorIdentifier;
+    }
+    get statusCode() { return this.json.statusCode; }
+    get statusCodeDescription() { return this.json.statusCodeDescription; }
+    get version() { return this.json.version; }
+    get weight() { return this.json.weight; }
+    static fromJSON(json) {
+        const result = new USUniformedServicesBarcodeResult();
+        result.json = json;
+        return result;
+    }
+}
+
+class USVisaVIZResult {
+    get visaNumber() { return this.json.visaNumber; }
+    get passportNumber() { return this.json.passportNumber; }
+    static fromJSON(json) {
+        const result = new USVisaVIZResult();
         result.json = json;
         return result;
     }
@@ -636,7 +609,6 @@ class CommonCapturedIdFields {
     get address() { return this.json.address; }
     get documentAdditionalNumber() { return this.json.documentAdditionalNumber; }
     get documentType() { return this.json.documentType; }
-    get documentSubtype() { return this.json.documentSubtype; }
     get documentNumber() { return this.json.documentNumber; }
     get issuingCountry() { return this.json.issuingCountry; }
     get issuingCountryIso() { return this.json.issuingCountryIso; }
@@ -661,7 +633,6 @@ class CommonCapturedIdFields {
         const nationality = json.nationality;
         const address = json.address;
         const documentType = json.documentType;
-        const documentSubtype = json.documentSubtype;
         const documentNumber = json.documentNumber;
         const issuingCountry = json.issuingCountry;
         const issuingCountryIso = json.issuingCountryIso;
@@ -700,9 +671,6 @@ class CommonCapturedIdFields {
             }
             if (!existingInstance.documentType) {
                 json.documentType = documentType;
-            }
-            if (!existingInstance.documentSubtype) {
-                json.documentSubtype = documentSubtype;
             }
             if (!existingInstance.documentNumber) {
                 json.documentNumber = documentNumber;
@@ -747,12 +715,6 @@ class VIZResult {
     get sponsor() { return this.json.sponsor; }
     get mothersName() { return this.json.mothersName; }
     get fathersName() { return this.json.fathersName; }
-    get passportNumber() { return this.json.passportNumber; }
-    get visaNumber() { return this.json.visaNumber; }
-    get firstName() { return this.json.firstName; }
-    get lastName() { return this.json.lastName; }
-    get secondaryLastName() { return this.json.secondaryLastName; }
-    get fullName() { return this.json.fullName; }
     static fromJSON(json) {
         const result = new VIZResult();
         result.json = json;
@@ -760,579 +722,27 @@ class VIZResult {
     }
 }
 
-class ProfessionalDrivingPermit {
-    get dateOfExpiry() { return DateResult.fromJSON(this.json.dateOfExpiry); }
-    get codes() { return this.json.codes; }
+class CommonAccessCardBarcodeResult {
+    get version() { return this.json.version; }
+    get personDesignatorDocument() { return this.json.personDesignatorDocument; }
+    get personDesignatorTypeCode() { return this.json.personDesignatorTypeCode; }
+    get ediPersonIdentifier() { return this.json.ediPersonIdentifier; }
+    get personnelCategoryCode() { return this.json.personnelCategoryCode; }
+    get branchOfService() { return this.json.branchOfService; }
+    get personnelEntitlementConditionType() { return this.json.personnelEntitlementConditionType; }
+    get rank() { return this.json.rank; }
+    get payPlanCode() { return this.json.payPlanCode; }
+    get payPlanGradeCode() { return this.json.payPlanGradeCode; }
+    get cardInstanceIdentifier() { return this.json.cardInstanceIdentifier; }
+    get personMiddleInitial() { return this.json.personMiddleInitial; }
     static fromJSON(json) {
-        if (json === null) {
-            return null;
-        }
-        const object = new ProfessionalDrivingPermit();
-        object.json = json;
-        return object;
+        const result = new CommonAccessCardBarcodeResult();
+        result.json = json;
+        return result;
     }
 }
-
-class VehicleRestriction {
-    get vehicleCode() { return this.json.vehicleCode; }
-    get vehicleRestriction() { return this.json.vehicleRestriction; }
-    get dateOfIssue() { return DateResult.fromJSON(this.json.dateOfIssue); }
-    static fromJSON(json) {
-        if (json === null) {
-            return null;
-        }
-        const object = new VehicleRestriction();
-        object.json = json;
-        return object;
-    }
-}
-
-class BarcodeResult {
-    constructor(json) {
-        this.json = json;
-    }
-    static fromJSON(json) {
-        return new BarcodeResult(json);
-    }
-    get aamvaVersion() {
-        return this.json.aamvaVersion;
-    }
-    get aliasFamilyName() {
-        return this.json.aliasFamilyName;
-    }
-    get aliasGivenName() {
-        return this.json.aliasGivenName;
-    }
-    get aliasSuffixName() {
-        return this.json.aliasSuffixName;
-    }
-    get bloodType() {
-        return this.json.bloodType;
-    }
-    get branchOfService() {
-        return this.json.branchOfService;
-    }
-    get cardInstanceIdentifier() {
-        return this.json.cardInstanceIdentifier;
-    }
-    get cardRevisionDate() {
-        return DateResult.fromJSON(this.json.cardRevisionDate);
-    }
-    get categories() {
-        return this.json.categories;
-    }
-    get champusEffectiveDate() {
-        return DateResult.fromJSON(this.json.champusEffectiveDate);
-    }
-    get champusExpiryDate() {
-        return DateResult.fromJSON(this.json.champusExpiryDate);
-    }
-    get citizenshipStatus() {
-        return this.json.citizenshipStatus;
-    }
-    get civilianHealthCareFlagCode() {
-        return this.json.civilianHealthCareFlagCode;
-    }
-    get civilianHealthCareFlagDescription() {
-        return this.json.civilianHealthCareFlagDescription;
-    }
-    get commissaryFlagCode() {
-        return this.json.commissaryFlagCode;
-    }
-    get commissaryFlagDescription() {
-        return this.json.commissaryFlagDescription;
-    }
-    get countryOfBirth() {
-        return this.json.countryOfBirth;
-    }
-    get countryOfBirthIso() {
-        return this.json.countryOfBirthIso;
-    }
-    get deersDependentSuffixCode() {
-        return this.json.deersDependentSuffixCode;
-    }
-    get deersDependentSuffixDescription() {
-        return this.json.deersDependentSuffixDescription;
-    }
-    get directCareFlagCode() {
-        return this.json.directCareFlagCode;
-    }
-    get directCareFlagDescription() {
-        return this.json.directCareFlagDescription;
-    }
-    get documentCopy() {
-        return this.json.documentCopy;
-    }
-    get documentDiscriminatorNumber() {
-        return this.json.documentDiscriminatorNumber;
-    }
-    get driverNamePrefix() {
-        return this.json.driverNamePrefix;
-    }
-    get driverNameSuffix() {
-        return this.json.driverNameSuffix;
-    }
-    get driverRestrictionCodes() {
-        return this.json.driverRestrictionCodes;
-    }
-    get ediPersonIdentifier() {
-        return this.json.ediPersonIdentifier;
-    }
-    get endorsementsCode() {
-        return this.json.endorsementsCode;
-    }
-    get exchangeFlagCode() {
-        return this.json.exchangeFlagCode;
-    }
-    get exchangeFlagDescription() {
-        return this.json.exchangeFlagDescription;
-    }
-    get eyeColor() {
-        return this.json.eyeColor;
-    }
-    get familySequenceNumber() {
-        return this.json.familySequenceNumber;
-    }
-    get firstNameTruncation() {
-        return this.json.firstNameTruncation;
-    }
-    get firstNameWithoutMiddleName() {
-        return this.json.firstNameWithoutMiddleName;
-    }
-    get formNumber() {
-        return this.json.formNumber;
-    }
-    get genevaConventionCategory() {
-        return this.json.genevaConventionCategory;
-    }
-    get hairColor() {
-        return this.json.hairColor;
-    }
-    get heightCm() {
-        return this.json.heightCm;
-    }
-    get heightInch() {
-        return this.json.heightInch;
-    }
-    get iin() {
-        return this.json.iin;
-    }
-    get identificationType() {
-        return this.json.identificationType;
-    }
-    get issuingJurisdiction() {
-        return this.json.issuingJurisdiction;
-    }
-    get issuingJurisdictionIso() {
-        return this.json.issuingJurisdictionIso;
-    }
-    get jpegData() {
-        return this.json.jpegData;
-    }
-    get jurisdictionVersion() {
-        return this.json.jurisdictionVersion;
-    }
-    get lastNameTruncation() {
-        return this.json.lastNameTruncation;
-    }
-    get licenseCountryOfIssue() {
-        return this.json.licenseCountryOfIssue;
-    }
-    get middleName() {
-        return this.json.middleName;
-    }
-    get middleNameTruncation() {
-        return this.json.middleNameTruncation;
-    }
-    get mwrFlagCode() {
-        return this.json.mwrFlagCode;
-    }
-    get mwrFlagDescription() {
-        return this.json.mwrFlagDescription;
-    }
-    get payGrade() {
-        return this.json.payGrade;
-    }
-    get payPlanCode() {
-        return this.json.payPlanCode;
-    }
-    get payPlanGradeCode() {
-        return this.json.payPlanGradeCode;
-    }
-    get personDesignatorDocument() {
-        return this.json.personDesignatorDocument;
-    }
-    get personDesignatorTypeCode() {
-        return this.json.personDesignatorTypeCode;
-    }
-    get personMiddleInitial() {
-        return this.json.personMiddleInitial;
-    }
-    get personalIdNumber() {
-        return this.json.personalIdNumber;
-    }
-    get personalIdNumberType() {
-        return this.json.personalIdNumberType;
-    }
-    get personnelCategoryCode() {
-        return this.json.personnelCategoryCode;
-    }
-    get personnelEntitlementConditionType() {
-        return this.json.personnelEntitlementConditionType;
-    }
-    get placeOfBirth() {
-        return this.json.placeOfBirth;
-    }
-    get professionalDrivingPermit() {
-        return ProfessionalDrivingPermit.fromJSON(this.json.professionalDrivingPermit);
-    }
-    get race() {
-        return this.json.race;
-    }
-    get rank() {
-        return this.json.rank;
-    }
-    get relationshipCode() {
-        return this.json.relationshipCode;
-    }
-    get relationshipDescription() {
-        return this.json.relationshipDescription;
-    }
-    get restrictionsCode() {
-        return this.json.restrictionsCode;
-    }
-    get securityCode() {
-        return this.json.securityCode;
-    }
-    get serviceCode() {
-        return this.json.serviceCode;
-    }
-    get sponsorFlag() {
-        return this.json.sponsorFlag;
-    }
-    get sponsorName() {
-        return this.json.sponsorName;
-    }
-    get sponsorPersonDesignatorIdentifier() {
-        return this.json.sponsorPersonDesignatorIdentifier;
-    }
-    get statusCode() {
-        return this.json.statusCode;
-    }
-    get statusCodeDescription() {
-        return this.json.statusCodeDescription;
-    }
-    get vehicleClass() {
-        return this.json.vehicleClass;
-    }
-    get vehicleRestrictions() {
-        return this.json.vehicleRestrictions.map(json => VehicleRestriction.fromJSON(json));
-    }
-    get version() {
-        return this.json.version;
-    }
-    get weightKg() {
-        return this.json.weightKg;
-    }
-    get weightLbs() {
-        return this.json.weightLbs;
-    }
-    get isRealId() {
-        return this.json.isRealId;
-    }
-    get barcodeDataElements() {
-        return this.json.barcodeDataElements;
-    }
-}
-
-var IdCaptureDocumentType;
-(function (IdCaptureDocumentType) {
-    IdCaptureDocumentType["IdCard"] = "idCard";
-    IdCaptureDocumentType["DriverLicense"] = "driverLicense";
-    IdCaptureDocumentType["Passport"] = "passport";
-    IdCaptureDocumentType["VisaIcao"] = "visaIcao";
-    IdCaptureDocumentType["RegionSpecific"] = "regionSpecific";
-    IdCaptureDocumentType["ResidencePermit"] = "residencePermit";
-    IdCaptureDocumentType["HealthInsuranceCard"] = "healthInsuranceCard";
-})(IdCaptureDocumentType || (IdCaptureDocumentType = {}));
-
-class DriverLicense extends DefaultSerializeable {
-    constructor(region) {
-        super();
-        this._documentType = IdCaptureDocumentType.DriverLicense;
-        this._region = region;
-    }
-    get region() {
-        return this._region;
-    }
-    get isIdCard() {
-        return this._documentType === IdCaptureDocumentType.IdCard;
-    }
-    get isDriverLicense() {
-        return this._documentType === IdCaptureDocumentType.DriverLicense;
-    }
-    get isPassport() {
-        return this._documentType === IdCaptureDocumentType.Passport;
-    }
-    get isVisaIcao() {
-        return this._documentType === IdCaptureDocumentType.VisaIcao;
-    }
-    get isRegionSpecific() {
-        return this._documentType === IdCaptureDocumentType.RegionSpecific;
-    }
-    get isResidencePermit() {
-        return this._documentType === IdCaptureDocumentType.ResidencePermit;
-    }
-    get isHealthInsuranceCard() {
-        return this._documentType === IdCaptureDocumentType.HealthInsuranceCard;
-    }
-}
-__decorate([
-    nameForSerialization('region')
-], DriverLicense.prototype, "_region", undefined);
-__decorate([
-    nameForSerialization('documentType')
-], DriverLicense.prototype, "_documentType", undefined);
-
-class HealthInsuranceCard extends DefaultSerializeable {
-    constructor(region) {
-        super();
-        this._documentType = IdCaptureDocumentType.HealthInsuranceCard;
-        this._region = region;
-    }
-    get region() {
-        return this._region;
-    }
-    get isIdCard() {
-        return this._documentType === IdCaptureDocumentType.IdCard;
-    }
-    get isDriverLicense() {
-        return this._documentType === IdCaptureDocumentType.DriverLicense;
-    }
-    get isPassport() {
-        return this._documentType === IdCaptureDocumentType.Passport;
-    }
-    get isVisaIcao() {
-        return this._documentType === IdCaptureDocumentType.VisaIcao;
-    }
-    get isRegionSpecific() {
-        return this._documentType === IdCaptureDocumentType.RegionSpecific;
-    }
-    get isResidencePermit() {
-        return this._documentType === IdCaptureDocumentType.ResidencePermit;
-    }
-    get isHealthInsuranceCard() {
-        return this._documentType === IdCaptureDocumentType.HealthInsuranceCard;
-    }
-}
-__decorate([
-    nameForSerialization('region')
-], HealthInsuranceCard.prototype, "_region", undefined);
-__decorate([
-    nameForSerialization('documentType')
-], HealthInsuranceCard.prototype, "_documentType", undefined);
-
-class IdCard extends DefaultSerializeable {
-    constructor(region) {
-        super();
-        this._documentType = IdCaptureDocumentType.IdCard;
-        this._region = region;
-    }
-    get region() {
-        return this._region;
-    }
-    get isIdCard() {
-        return this._documentType === IdCaptureDocumentType.IdCard;
-    }
-    get isDriverLicense() {
-        return this._documentType === IdCaptureDocumentType.DriverLicense;
-    }
-    get isPassport() {
-        return this._documentType === IdCaptureDocumentType.Passport;
-    }
-    get isVisaIcao() {
-        return this._documentType === IdCaptureDocumentType.VisaIcao;
-    }
-    get isRegionSpecific() {
-        return this._documentType === IdCaptureDocumentType.RegionSpecific;
-    }
-    get isResidencePermit() {
-        return this._documentType === IdCaptureDocumentType.ResidencePermit;
-    }
-    get isHealthInsuranceCard() {
-        return this._documentType === IdCaptureDocumentType.HealthInsuranceCard;
-    }
-}
-__decorate([
-    nameForSerialization('region')
-], IdCard.prototype, "_region", undefined);
-__decorate([
-    nameForSerialization('documentType')
-], IdCard.prototype, "_documentType", undefined);
-
-class Passport extends DefaultSerializeable {
-    constructor(region) {
-        super();
-        this._documentType = IdCaptureDocumentType.Passport;
-        this._region = region;
-    }
-    get region() {
-        return this._region;
-    }
-    get isIdCard() {
-        return this._documentType === IdCaptureDocumentType.IdCard;
-    }
-    get isDriverLicense() {
-        return this._documentType === IdCaptureDocumentType.DriverLicense;
-    }
-    get isPassport() {
-        return this._documentType === IdCaptureDocumentType.Passport;
-    }
-    get isVisaIcao() {
-        return this._documentType === IdCaptureDocumentType.VisaIcao;
-    }
-    get isRegionSpecific() {
-        return this._documentType === IdCaptureDocumentType.RegionSpecific;
-    }
-    get isResidencePermit() {
-        return this._documentType === IdCaptureDocumentType.ResidencePermit;
-    }
-    get isHealthInsuranceCard() {
-        return this._documentType === IdCaptureDocumentType.HealthInsuranceCard;
-    }
-}
-__decorate([
-    nameForSerialization('region')
-], Passport.prototype, "_region", undefined);
-__decorate([
-    nameForSerialization('documentType')
-], Passport.prototype, "_documentType", undefined);
-
-class RegionSpecific extends DefaultSerializeable {
-    constructor(subtype) {
-        super();
-        this._documentType = IdCaptureDocumentType.RegionSpecific;
-        this._region = IdCaptureRegion.Any;
-        this._documentSubtype = subtype;
-    }
-    get region() {
-        return this._region;
-    }
-    get subtype() {
-        return this._documentSubtype;
-    }
-    get isIdCard() {
-        return this._documentType === IdCaptureDocumentType.IdCard;
-    }
-    get isDriverLicense() {
-        return this._documentType === IdCaptureDocumentType.DriverLicense;
-    }
-    get isPassport() {
-        return this._documentType === IdCaptureDocumentType.Passport;
-    }
-    get isVisaIcao() {
-        return this._documentType === IdCaptureDocumentType.VisaIcao;
-    }
-    get isRegionSpecific() {
-        return this._documentType === IdCaptureDocumentType.RegionSpecific;
-    }
-    get isResidencePermit() {
-        return this._documentType === IdCaptureDocumentType.ResidencePermit;
-    }
-    get isHealthInsuranceCard() {
-        return this._documentType === IdCaptureDocumentType.HealthInsuranceCard;
-    }
-}
-__decorate([
-    nameForSerialization('region')
-], RegionSpecific.prototype, "_region", undefined);
-__decorate([
-    nameForSerialization('documentSubtype')
-], RegionSpecific.prototype, "_documentSubtype", undefined);
-__decorate([
-    nameForSerialization('documentType')
-], RegionSpecific.prototype, "_documentType", undefined);
-
-class ResidencePermit extends DefaultSerializeable {
-    constructor(region) {
-        super();
-        this._documentType = IdCaptureDocumentType.ResidencePermit;
-        this._region = region;
-    }
-    get region() {
-        return this._region;
-    }
-    get isIdCard() {
-        return this._documentType === IdCaptureDocumentType.IdCard;
-    }
-    get isDriverLicense() {
-        return this._documentType === IdCaptureDocumentType.DriverLicense;
-    }
-    get isPassport() {
-        return this._documentType === IdCaptureDocumentType.Passport;
-    }
-    get isVisaIcao() {
-        return this._documentType === IdCaptureDocumentType.VisaIcao;
-    }
-    get isRegionSpecific() {
-        return this._documentType === IdCaptureDocumentType.RegionSpecific;
-    }
-    get isResidencePermit() {
-        return this._documentType === IdCaptureDocumentType.ResidencePermit;
-    }
-    get isHealthInsuranceCard() {
-        return this._documentType === IdCaptureDocumentType.HealthInsuranceCard;
-    }
-}
-__decorate([
-    nameForSerialization('region')
-], ResidencePermit.prototype, "_region", undefined);
-__decorate([
-    nameForSerialization('documentType')
-], ResidencePermit.prototype, "_documentType", undefined);
-
-class VisaIcao extends DefaultSerializeable {
-    constructor(region) {
-        super();
-        this._documentType = IdCaptureDocumentType.VisaIcao;
-        this._region = region;
-    }
-    get region() {
-        return this._region;
-    }
-    get isIdCard() {
-        return this._documentType === IdCaptureDocumentType.IdCard;
-    }
-    get isDriverLicense() {
-        return this._documentType === IdCaptureDocumentType.DriverLicense;
-    }
-    get isPassport() {
-        return this._documentType === IdCaptureDocumentType.Passport;
-    }
-    get isVisaIcao() {
-        return this._documentType === IdCaptureDocumentType.VisaIcao;
-    }
-    get isRegionSpecific() {
-        return this._documentType === IdCaptureDocumentType.RegionSpecific;
-    }
-    get isResidencePermit() {
-        return this._documentType === IdCaptureDocumentType.ResidencePermit;
-    }
-    get isHealthInsuranceCard() {
-        return this._documentType === IdCaptureDocumentType.HealthInsuranceCard;
-    }
-}
-__decorate([
-    nameForSerialization('region')
-], VisaIcao.prototype, "_region", undefined);
-__decorate([
-    nameForSerialization('documentType')
-], VisaIcao.prototype, "_documentType", undefined);
 
 class CapturedId {
-    constructor() {
-        this._document = null;
-    }
     get firstName() { return this.commonCapturedFields.firstName; }
     get lastName() { return this.commonCapturedFields.lastName; }
     get fullName() { return this.commonCapturedFields.fullName; }
@@ -1345,7 +755,11 @@ class CapturedId {
     get isExpired() { return this.json.isExpired; }
     get nationality() { return this.commonCapturedFields.nationality; }
     get address() { return this.commonCapturedFields.address; }
-    get document() { return this._document; }
+    get capturedResultType() { return this.json.capturedResultType; }
+    get capturedResultTypes() {
+        return this.json.capturedResultTypes;
+    }
+    get documentType() { return this.commonCapturedFields.documentType; }
     get issuingCountryIso() { return this.commonCapturedFields.issuingCountryIso; }
     get issuingCountry() { return this.commonCapturedFields.issuingCountry; }
     get documentAdditionalNumber() { return this.commonCapturedFields.documentAdditionalNumber; }
@@ -1356,12 +770,33 @@ class CapturedId {
     get dateOfIssue() {
         return DateResult.fromJSON(this.commonCapturedFields.dateOfIssue);
     }
-    get barcode() {
-        if (this._barcodeResult == null && this.json.barcodeResult != null) {
-            this._barcodeResult = BarcodeResult.
-                fromJSON(this.json.barcodeResult);
+    get aamvaBarcodeResult() {
+        if (this._aamvaBarcodeResult == null && this.json.aamvaBarcodeResult != null) {
+            this._aamvaBarcodeResult = AAMVABarcodeResult.
+                fromJSON(this.json.aamvaBarcodeResult);
         }
-        return this._barcodeResult;
+        return this._aamvaBarcodeResult;
+    }
+    get argentinaIdBarcodeResult() {
+        if (this._argentinaIdBarcodeResult == null && this.json.argentinaIdBarcodeResult != null) {
+            this._argentinaIdBarcodeResult = ArgentinaIdBarcodeResult.
+                fromJSON(this.json.argentinaIdBarcodeResult);
+        }
+        return this._argentinaIdBarcodeResult;
+    }
+    get colombiaIdBarcodeResult() {
+        if (this._colombiaIdBarcodeResult == null && this.json.colombiaIdBarcodeResult != null) {
+            this._colombiaIdBarcodeResult = ColombiaIdBarcodeResult.
+                fromJSON(this.json.colombiaIdBarcodeResult);
+        }
+        return this._colombiaIdBarcodeResult;
+    }
+    get colombiaDlBarcodeResult() {
+        if (this._colombiaDlBarcodeResult == null && this.json.colombiaDlBarcodeResult != null) {
+            this._colombiaDlBarcodeResult = ColombiaDlBarcodeResult.
+                fromJSON(this.json.colombiaDlBarcodeResult);
+        }
+        return this._colombiaDlBarcodeResult;
     }
     get mrzResult() {
         if (this._mrzResult == null && this.json.mrzResult != null) {
@@ -1369,85 +804,201 @@ class CapturedId {
         }
         return this._mrzResult;
     }
+    get southAfricaIdBarcodeResult() {
+        if (this._southAfricaIdBarcodeResult == null && this.json.southAfricaIdBarcodeResult != null) {
+            this._southAfricaIdBarcodeResult = SouthAfricaIdBarcodeResult.
+                fromJSON(this.json.southAfricaIdBarcodeResult);
+        }
+        return this._southAfricaIdBarcodeResult;
+    }
+    get southAfricaDlBarcodeResult() {
+        if (this._southAfricaDlBarcodeResult == null && this.json.southAfricaDlBarcodeResult != null) {
+            this._southAfricaDlBarcodeResult = SouthAfricaDlBarcodeResult.
+                fromJSON(this.json.southAfricaDlBarcodeResult);
+        }
+        return this._southAfricaDlBarcodeResult;
+    }
+    get commonAccessCardBarcodeResult() {
+        if (this._commonAccessBarcodeResult == null && this.json.commonAccessCardBarcodeResult != null) {
+            this._commonAccessBarcodeResult = CommonAccessCardBarcodeResult.
+                fromJSON(this.json.commonAccessCardBarcodeResult);
+        }
+        return this._commonAccessBarcodeResult;
+    }
+    get usUniformedServicesBarcodeResult() {
+        if (this._usUniformedServicesBarcodeResult == null && this.json.usUniformedServicesBarcodeResult != null) {
+            const fromJSON = USUniformedServicesBarcodeResult.fromJSON;
+            this._usUniformedServicesBarcodeResult = fromJSON(this.json.usUniformedServicesBarcodeResult);
+        }
+        return this._usUniformedServicesBarcodeResult;
+    }
+    get usVisaViz() {
+        if (this._usVisaVizResult == null && this.json.usVisaVizResult != null) {
+            const fromJSON = USVisaVIZResult.fromJSON;
+            this._usVisaVizResult = fromJSON(this.json.usVisaVizResult);
+        }
+        return this._usVisaVizResult;
+    }
     get vizResult() {
         if (this._vizResult == null && this.json.vizResult != null) {
             this._vizResult = VIZResult.fromJSON(this.json.vizResult);
         }
         return this._vizResult;
     }
-    isIdCard() {
-        var _a;
-        return ((_a = this.document) === null || _a === undefined ? undefined : _a.isIdCard) === true;
+    get chinaMainlandTravelPermitMRZResult() {
+        if (this._chinaMainlandTravelPermitMRZResult == null && this.json.chinaMainlandTravelPermitMrzResult != null) {
+            this._chinaMainlandTravelPermitMRZResult =
+                ChinaMainlandTravelPermitMRZResult
+                    .fromJSON(this.json.chinaMainlandTravelPermitMrzResult);
+        }
+        return this._chinaMainlandTravelPermitMRZResult;
     }
-    isDriverLicense() {
-        var _a;
-        return ((_a = this.document) === null || _a === undefined ? undefined : _a.isDriverLicense) === true;
+    get chinaExitEntryPermitMRZResult() {
+        if (this._chinaExitEntryPermitMRZResult == null && this.json.chinaExitEntryPermitMrzResult != null) {
+            this._chinaExitEntryPermitMRZResult =
+                ChinaExitEntryPermitMRZResult
+                    .fromJSON(this.json.chinaExitEntryPermitMrzResult);
+        }
+        return this._chinaExitEntryPermitMRZResult;
     }
-    isPassport() {
-        var _a;
-        return ((_a = this.document) === null || _a === undefined ? undefined : _a.isPassport) === true;
+    get chinaOneWayPermitBackMrzResult() {
+        if (this._chinaOneWayPermitBackMrzResult == null && this.json.chinaOneWayPermitBackMrzResult != null) {
+            this._chinaOneWayPermitBackMrzResult =
+                ChinaOneWayPermitBackMrzResult
+                    .fromJSON(this.json.chinaOneWayPermitBackMrzResult);
+        }
+        return this._chinaOneWayPermitBackMrzResult;
     }
-    isVisaIcao() {
-        var _a;
-        return ((_a = this.document) === null || _a === undefined ? undefined : _a.isVisaIcao) === true;
+    get chinaOneWayPermitFrontMrzResult() {
+        if (this._chinaOneWayPermitFrontMrzResult == null && this.json.chinaOneWayPermitFrontMrzResult != null) {
+            this._chinaOneWayPermitFrontMrzResult =
+                ChinaOneWayPermitFrontMrzResult
+                    .fromJSON(this.json.chinaOneWayPermitFrontMrzResult);
+        }
+        return this._chinaOneWayPermitFrontMrzResult;
     }
-    isRegionSpecific(subtype) {
-        var _a;
-        return ((_a = this.document) === null || _a === undefined ? undefined : _a.isRegionSpecific) === true && this.document.subtype === subtype;
-    }
-    isResidencePermit() {
-        var _a;
-        return ((_a = this.document) === null || _a === undefined ? undefined : _a.isResidencePermit) === true;
-    }
-    isHealthInsuranceCard() {
-        var _a;
-        return ((_a = this.document) === null || _a === undefined ? undefined : _a.isHealthInsuranceCard) === true;
-    }
-    get images() {
-        return this._images;
+    get apecBusinessTravelCardMrzResult() {
+        if (this._apecBusinessTravelCardMrzResult == null && this.json.apecBusinessTravelCardMrzResult != null) {
+            this._apecBusinessTravelCardMrzResult =
+                ApecBusinessTravelCardMrzResult
+                    .fromJSON(this.json.apecBusinessTravelCardMrzResult);
+        }
+        return this._apecBusinessTravelCardMrzResult;
     }
     static fromJSON(json) {
         const result = new CapturedId();
         result.json = json;
-        if (json.barcodeResult) {
-            result.commonCapturedFields = CommonCapturedIdFields.fromJSON(json.barcodeResult, result.commonCapturedFields);
+        if (json.aamvaBarcodeResult) {
+            result.commonCapturedFields = CommonCapturedIdFields.fromJSON(json.aamvaBarcodeResult, result.commonCapturedFields);
+        }
+        if (json.argentinaIdBarcodeResult) {
+            result.commonCapturedFields = CommonCapturedIdFields.fromJSON(json.argentinaIdBarcodeResult, result.commonCapturedFields);
+        }
+        if (json.colombiaIdBarcodeResult) {
+            result.commonCapturedFields = CommonCapturedIdFields.fromJSON(json.colombiaIdBarcodeResult, result.commonCapturedFields);
+        }
+        if (json.colombiaDlBarcodeResult) {
+            result.commonCapturedFields = CommonCapturedIdFields.fromJSON(json.colombiaDlBarcodeResult, result.commonCapturedFields);
         }
         if (json.mrzResult) {
             result.commonCapturedFields = CommonCapturedIdFields.fromJSON(json.mrzResult, result.commonCapturedFields);
         }
+        if (json.southAfricaIdBarcodeResult) {
+            result.commonCapturedFields = CommonCapturedIdFields.fromJSON(json.southAfricaIdBarcodeResult, result.commonCapturedFields);
+        }
+        if (json.southAfricaDlBarcodeResult) {
+            result.commonCapturedFields = CommonCapturedIdFields.fromJSON(json.southAfricaDlBarcodeResult, result.commonCapturedFields);
+        }
+        if (json.commonAccessCardBarcodeResult) {
+            result.commonCapturedFields = CommonCapturedIdFields.fromJSON(json.commonAccessCardBarcodeResult, result.commonCapturedFields);
+        }
+        if (json.usUniformedServicesBarcodeResult) {
+            result.commonCapturedFields = CommonCapturedIdFields.fromJSON(json.usUniformedServicesBarcodeResult, result.commonCapturedFields);
+        }
+        if (json.usVisaVizResult) {
+            result.commonCapturedFields = CommonCapturedIdFields.fromJSON(json.usVisaVizResult, result.commonCapturedFields);
+        }
         if (json.vizResult) {
             result.commonCapturedFields = CommonCapturedIdFields.fromJSON(json.vizResult, result.commonCapturedFields);
         }
-        if (result.commonCapturedFields && result.commonCapturedFields.documentType) {
-            result._document = this.getDocument(result.issuingCountry, result.commonCapturedFields.documentType, result.commonCapturedFields.documentSubtype);
+        if (json.chinaMainlandTravelPermitMrzResult) {
+            result.commonCapturedFields = CommonCapturedIdFields.fromJSON(json.chinaMainlandTravelPermitMrzResult, result.commonCapturedFields);
         }
-        result._images = IdImages.fromJSON(json.imageInfo);
+        if (json.chinaExitEntryPermitMrzResult) {
+            result.commonCapturedFields = CommonCapturedIdFields.fromJSON(json.chinaExitEntryPermitMrzResult, result.commonCapturedFields);
+        }
+        if (json.chinaOneWayPermitBackMrzResult) {
+            result.commonCapturedFields = CommonCapturedIdFields.fromJSON(json.chinaOneWayPermitBackMrzResult, result.commonCapturedFields);
+        }
+        if (json.chinaOneWayPermitFrontMrzResult) {
+            result.commonCapturedFields = CommonCapturedIdFields.fromJSON(json.chinaOneWayPermitFrontMrzResult, result.commonCapturedFields);
+        }
+        if (json.apecBusinessTravelCardMrzResult) {
+            result.commonCapturedFields = CommonCapturedIdFields.fromJSON(json.apecBusinessTravelCardMrzResult, result.commonCapturedFields);
+        }
         return result;
     }
-    static getDocument(issuingCountry, documentType, documentSubtype) {
-        switch (documentType) {
-            case IdCaptureDocumentType.DriverLicense:
-                return new DriverLicense(issuingCountry);
-            case IdCaptureDocumentType.HealthInsuranceCard:
-                return new HealthInsuranceCard(issuingCountry);
-            case IdCaptureDocumentType.IdCard:
-                return new IdCard(issuingCountry);
-            case IdCaptureDocumentType.Passport:
-                return new Passport(issuingCountry);
-            case IdCaptureDocumentType.RegionSpecific:
-                if (!documentSubtype) {
-                    throw new Error('documentSubtype cannot be null for RegionSpecific documents.');
-                }
-                return new RegionSpecific(documentSubtype);
-            case IdCaptureDocumentType.ResidencePermit:
-                return new ResidencePermit(issuingCountry);
-            case IdCaptureDocumentType.VisaIcao:
-                return new VisaIcao(issuingCountry);
-            default:
-                throw new Error(`Unknown document type ${documentType}`);
+    idImageOfType(type) {
+        if (this.json.imageInfo === null) {
+            return null;
         }
+        return this.json.imageInfo[type];
     }
 }
+
+class IdCaptureError {
+    get type() {
+        return this._type;
+    }
+    get message() {
+        return this._message;
+    }
+    static fromJSON(json) {
+        const error = new IdCaptureError();
+        error._type = json.type;
+        error._message = json.message;
+        return error;
+    }
+}
+
+class IdCaptureSession {
+    get newlyCapturedId() {
+        return this._newlyCapturedId;
+    }
+    get frameSequenceId() {
+        return this._frameSequenceId;
+    }
+    get localizedOnlyId() {
+        return this._localizedOnlyId;
+    }
+    get newlyRejectedId() {
+        return this._newlyRejectedId;
+    }
+    static fromJSON(json) {
+        const session = new IdCaptureSession();
+        if (json.newlyCapturedId) {
+            session._newlyCapturedId = CapturedId.fromJSON(json.newlyCapturedId);
+        }
+        if (json.localizedOnlyId) {
+            session._localizedOnlyId = LocalizedOnlyId.fromJSON(json.localizedOnlyId);
+        }
+        if (json.newlyRejectedId) {
+            session._newlyRejectedId = LocalizedOnlyId.fromJSON(json.newlyRejectedId);
+        }
+        session._frameSequenceId = json.frameSequenceId;
+        session._error = json.error ? IdCaptureError.fromJSON(json.error) : null;
+        return session;
+    }
+}
+
+var IdCaptureListenerEvents;
+(function (IdCaptureListenerEvents) {
+    IdCaptureListenerEvents["inCallback"] = "IdCaptureListener.inCallback";
+    IdCaptureListenerEvents["didCapture"] = "IdCaptureListener.didCaptureId";
+    IdCaptureListenerEvents["didLocalize"] = "IdCaptureListener.didLocalizeId";
+    IdCaptureListenerEvents["didReject"] = "IdCaptureListener.didRejectId";
+    IdCaptureListenerEvents["didTimeOut"] = "IdCaptureListener.didTimeout";
+})(IdCaptureListenerEvents || (IdCaptureListenerEvents = {}));
 
 class IdCaptureListenerController {
     get _proxy() {
@@ -1464,56 +1015,81 @@ class IdCaptureListenerController {
     }
     subscribeListener() {
         this._proxy.subscribeDidCaptureListener();
+        this._proxy.subscribeDidLocalizeListener();
         this._proxy.subscribeDidRejectListener();
+        this._proxy.subscribeDidTimeOutListener();
         this.eventEmitter.on(IdCaptureListenerEvents.inCallback, (value) => {
             this.idCapture.isInListenerCallback = value;
         });
-        this.eventEmitter.on(IdCaptureListenerEvents.didCapture, (data) => {
-            const event = EventDataParser.parse(data);
-            if (event === null) {
-                console.error('IdCaptureListenerController didCapture payload is null');
-                return;
-            }
-            const captureId = CapturedId.fromJSON(JSON.parse(event.id));
-            this.notifyListenersOfDidCapture(captureId);
+        this.eventEmitter.on(IdCaptureListenerEvents.didCapture, (body) => {
+            const payload = JSON.parse(body);
+            const session = IdCaptureSession.fromJSON(JSON.parse(payload.session));
+            this.notifyListenersOfDidCapture(session);
             this._proxy.finishDidCaptureCallback(this.idCapture.isEnabled);
         });
-        this.eventEmitter.on(IdCaptureListenerEvents.didReject, (data) => {
-            const event = EventDataParser.parse(data);
-            if (event === null) {
-                console.error('IdCaptureListenerController didReject payload is null');
-                return;
-            }
-            let rejectedId = null;
-            if (event.id != null) {
-                rejectedId = CapturedId.fromJSON(JSON.parse(event.id));
-            }
-            this.notifyListenersOfDidReject(rejectedId, event.rejectionReason);
+        this.eventEmitter.on(IdCaptureListenerEvents.didLocalize, (body) => {
+            const payload = JSON.parse(body);
+            const session = IdCaptureSession.fromJSON(JSON.parse(payload.session));
+            this.notifyListenersOfDidLocalize(session);
+            this._proxy.finishDidLocalizeCallback(this.idCapture.isEnabled);
+        });
+        this.eventEmitter.on(IdCaptureListenerEvents.didReject, (body) => {
+            const payload = JSON.parse(body);
+            const session = IdCaptureSession.fromJSON(JSON.parse(payload.session));
+            this.notifyListenersOfDidReject(session);
             this._proxy.finishDidRejectCallback(this.idCapture.isEnabled);
+        });
+        this.eventEmitter.on(IdCaptureListenerEvents.didTimeOut, (body) => {
+            const payload = JSON.parse(body);
+            const session = IdCaptureSession.fromJSON(JSON.parse(payload.session));
+            this.notifyListenersOfDidTimeOut(session);
+            this._proxy.finishDidTimeOutCallback(this.idCapture.isEnabled);
         });
     }
     unsubscribeListener() {
         this._proxy.unregisterListenerForEvents();
         this.eventEmitter.removeAllListeners(IdCaptureListenerEvents.inCallback);
         this.eventEmitter.removeAllListeners(IdCaptureListenerEvents.didCapture);
+        this.eventEmitter.removeAllListeners(IdCaptureListenerEvents.didLocalize);
         this.eventEmitter.removeAllListeners(IdCaptureListenerEvents.didReject);
+        this.eventEmitter.removeAllListeners(IdCaptureListenerEvents.didTimeOut);
     }
-    notifyListenersOfDidCapture(captureId) {
+    notifyListenersOfDidCapture(session) {
         const mode = this.idCapture;
         mode.isInListenerCallback = true;
         mode.listeners.forEach(listener => {
             if (listener.didCaptureId) {
-                listener.didCaptureId(this.idCapture, captureId);
+                listener.didCaptureId(this.idCapture, session, CameraController.getLastFrame);
             }
         });
         mode.isInListenerCallback = false;
     }
-    notifyListenersOfDidReject(captureId, rejectionReason) {
+    notifyListenersOfDidLocalize(session) {
+        const mode = this.idCapture;
+        mode.isInListenerCallback = true;
+        mode.listeners.forEach(listener => {
+            if (listener.didLocalizeId) {
+                listener.didLocalizeId(this.idCapture, session, CameraController.getLastFrame);
+            }
+        });
+        mode.isInListenerCallback = false;
+    }
+    notifyListenersOfDidReject(session) {
         const mode = this.idCapture;
         mode.isInListenerCallback = true;
         mode.listeners.forEach(listener => {
             if (listener.didRejectId) {
-                listener.didRejectId(this.idCapture, captureId, rejectionReason);
+                listener.didRejectId(this.idCapture, session, CameraController.getLastFrame);
+            }
+        });
+        mode.isInListenerCallback = false;
+    }
+    notifyListenersOfDidTimeOut(session) {
+        const mode = this.idCapture;
+        mode.isInListenerCallback = true;
+        mode.listeners.forEach(listener => {
+            if (listener.didTimeoutInSession) {
+                listener.didTimeoutInSession(this.idCapture, session, CameraController.getLastFrame);
             }
         });
         mode.isInListenerCallback = false;
@@ -1522,7 +1098,7 @@ class IdCaptureListenerController {
 
 class IdCaptureFeedback extends DefaultSerializeable {
     static get defaultFeedback() {
-        return new IdCaptureFeedback(IdCaptureFeedback.idDefaults.IdCapture.Feedback.idCaptured, IdCaptureFeedback.idDefaults.IdCapture.Feedback.idRejected);
+        return new IdCaptureFeedback(IdCaptureFeedback.idDefaults.IdCapture.Feedback.idCaptured, IdCaptureFeedback.idDefaults.IdCapture.Feedback.idRejected, IdCaptureFeedback.idDefaults.IdCapture.Feedback.idCaptureTimeout);
     }
     get idCaptured() {
         return this._idCaptured;
@@ -1538,36 +1114,49 @@ class IdCaptureFeedback extends DefaultSerializeable {
         this._idRejected = idRejected;
         this.updateFeedback();
     }
+    get idCaptureTimeout() {
+        return this._idCaptureTimeout;
+    }
+    set idCaptureTimeout(idCaptureTimeout) {
+        this._idCaptureTimeout = idCaptureTimeout;
+        this.updateFeedback();
+    }
     static fromJSON(json) {
         const idCaptured = Feedback.fromJSON(json.idCaptured);
         const idRejected = Feedback.fromJSON(json.idRejected);
-        return new IdCaptureFeedback(idCaptured, idRejected);
+        const idCaptureTimeout = Feedback.fromJSON(json.idCaptureTimeout);
+        return new IdCaptureFeedback(idCaptured, idRejected, idCaptureTimeout);
     }
     static get idDefaults() {
         return getIdDefaults();
     }
     updateFeedback() {
         var _a;
-        (_a = this.controller) === null || _a === undefined ? undefined : _a.updateFeedback(this);
+        (_a = this.controller) === null || _a === void 0 ? void 0 : _a.updateFeedback(this);
     }
-    constructor(idCaptured, idRejected) {
+    constructor(idCaptured, idRejected, idCaptureTimeout) {
         super();
         this.controller = null;
         this._idCaptured = IdCaptureFeedback.idDefaults.IdCapture.Feedback.idCaptured;
         this._idRejected = IdCaptureFeedback.idDefaults.IdCapture.Feedback.idRejected;
+        this._idCaptureTimeout = IdCaptureFeedback.idDefaults.IdCapture.Feedback.idCaptureTimeout;
         this.idCaptured = idCaptured;
         this.idRejected = idRejected;
+        this.idCaptureTimeout = idCaptureTimeout;
     }
 }
 __decorate([
     ignoreFromSerialization
-], IdCaptureFeedback.prototype, "controller", undefined);
+], IdCaptureFeedback.prototype, "controller", void 0);
 __decorate([
     nameForSerialization('idCaptured')
-], IdCaptureFeedback.prototype, "_idCaptured", undefined);
+], IdCaptureFeedback.prototype, "_idCaptured", void 0);
 __decorate([
     nameForSerialization('idRejected')
-], IdCaptureFeedback.prototype, "_idRejected", undefined);
+], IdCaptureFeedback.prototype, "_idRejected", void 0);
+__decorate([
+    nameForSerialization('idCaptureTimeout')
+], IdCaptureFeedback.prototype, "_idCaptureTimeout", void 0);
 __decorate([
     ignoreFromSerialization
 ], IdCaptureFeedback, "idDefaults", null);
@@ -1651,25 +1240,25 @@ class IdCapture extends DefaultSerializeable {
 }
 __decorate([
     ignoreFromSerialization
-], IdCapture.prototype, "_isEnabled", undefined);
+], IdCapture.prototype, "_isEnabled", void 0);
 __decorate([
     nameForSerialization('feedback')
-], IdCapture.prototype, "_feedback", undefined);
+], IdCapture.prototype, "_feedback", void 0);
 __decorate([
     ignoreFromSerialization
-], IdCapture.prototype, "privateContext", undefined);
+], IdCapture.prototype, "privateContext", void 0);
 __decorate([
     ignoreFromSerialization
-], IdCapture.prototype, "listeners", undefined);
+], IdCapture.prototype, "listeners", void 0);
 __decorate([
     ignoreFromSerialization
-], IdCapture.prototype, "controller", undefined);
+], IdCapture.prototype, "controller", void 0);
 __decorate([
     ignoreFromSerialization
-], IdCapture.prototype, "listenerController", undefined);
+], IdCapture.prototype, "listenerController", void 0);
 __decorate([
     ignoreFromSerialization
-], IdCapture.prototype, "isInListenerCallback", undefined);
+], IdCapture.prototype, "isInListenerCallback", void 0);
 __decorate([
     ignoreFromSerialization
 ], IdCapture, "idCaptureDefaults", null);
@@ -1679,6 +1268,18 @@ var IdLayoutLineStyle;
     IdLayoutLineStyle["Light"] = "light";
     IdLayoutLineStyle["Bold"] = "bold";
 })(IdLayoutLineStyle || (IdLayoutLineStyle = {}));
+
+var IdLayout;
+(function (IdLayout) {
+    IdLayout["TD1"] = "td1";
+    IdLayout["TD2"] = "td2";
+    IdLayout["TD3"] = "td3";
+    IdLayout["MRVa"] = "mrvA";
+    IdLayout["VIZ"] = "viz";
+    IdLayout["PDF417"] = "pdf417";
+    IdLayout["Auto"] = "auto";
+    IdLayout["None"] = "none";
+})(IdLayout || (IdLayout = {}));
 
 var IdLayoutStyle;
 (function (IdLayoutStyle) {
@@ -1704,6 +1305,7 @@ class IdCaptureOverlay extends DefaultSerializeable {
     constructor() {
         super();
         this.type = 'idCapture';
+        this._idLayout = IdLayout.Auto;
         this._idLayoutStyle = IdLayoutStyle.Rounded;
         this._idLayoutLineStyle = IdLayoutLineStyle.Light;
         this._textHintPosition = TextHintPosition.AboveViewfinder;
@@ -1716,6 +1318,10 @@ class IdCaptureOverlay extends DefaultSerializeable {
         this._rejectedBrush = this._defaultRejectedBrush;
         this._frontSideTextHint = null;
         this._backSideTextHint = null;
+    }
+    setIdLayout(idLayout) {
+        this._idLayout = idLayout;
+        this.idCapture.controller.updateIdCaptureOverlay(this);
     }
     setFrontSideTextHint(text) {
         this._frontSideTextHint = text;
@@ -1786,115 +1392,53 @@ class IdCaptureOverlay extends DefaultSerializeable {
 }
 __decorate([
     ignoreFromSerialization
-], IdCaptureOverlay.prototype, "idCapture", undefined);
+], IdCaptureOverlay.prototype, "idCapture", void 0);
 __decorate([
     ignoreFromSerialization
-], IdCaptureOverlay.prototype, "view", undefined);
+], IdCaptureOverlay.prototype, "view", void 0);
+__decorate([
+    nameForSerialization('idLayout')
+], IdCaptureOverlay.prototype, "_idLayout", void 0);
 __decorate([
     nameForSerialization('idLayoutStyle')
-], IdCaptureOverlay.prototype, "_idLayoutStyle", undefined);
+], IdCaptureOverlay.prototype, "_idLayoutStyle", void 0);
 __decorate([
     nameForSerialization('idLayoutLineStyle')
-], IdCaptureOverlay.prototype, "_idLayoutLineStyle", undefined);
+], IdCaptureOverlay.prototype, "_idLayoutLineStyle", void 0);
 __decorate([
     nameForSerialization('textHintPosition')
-], IdCaptureOverlay.prototype, "_textHintPosition", undefined);
+], IdCaptureOverlay.prototype, "_textHintPosition", void 0);
 __decorate([
     nameForSerialization('showTextHints')
-], IdCaptureOverlay.prototype, "_showTextHints", undefined);
+], IdCaptureOverlay.prototype, "_showTextHints", void 0);
 __decorate([
     nameForSerialization('capturedBrush')
-], IdCaptureOverlay.prototype, "_capturedBrush", undefined);
+], IdCaptureOverlay.prototype, "_capturedBrush", void 0);
 __decorate([
     nameForSerialization('localizedBrush')
-], IdCaptureOverlay.prototype, "_localizedBrush", undefined);
+], IdCaptureOverlay.prototype, "_localizedBrush", void 0);
 __decorate([
     nameForSerialization('rejectedBrush')
-], IdCaptureOverlay.prototype, "_rejectedBrush", undefined);
+], IdCaptureOverlay.prototype, "_rejectedBrush", void 0);
 __decorate([
     nameForSerialization('frontSideTextHint')
-], IdCaptureOverlay.prototype, "_frontSideTextHint", undefined);
+], IdCaptureOverlay.prototype, "_frontSideTextHint", void 0);
 __decorate([
     nameForSerialization('backSideTextHint')
-], IdCaptureOverlay.prototype, "_backSideTextHint", undefined);
+], IdCaptureOverlay.prototype, "_backSideTextHint", void 0);
 __decorate([
     ignoreFromSerialization
 ], IdCaptureOverlay, "idCaptureDefaults", null);
-
-class SingleSideScanner extends DefaultSerializeable {
-    constructor(barcode, machineReadableZone, visualInspectionZone) {
-        super();
-        this._isFull = false;
-        this._barcode = barcode;
-        this._machineReadableZone = machineReadableZone;
-        this._visualInspectionZone = visualInspectionZone;
-        this.options = {
-            barcode: this._barcode,
-            machineReadableZone: this._machineReadableZone,
-            visualInspectionZone: this._visualInspectionZone
-        };
-    }
-    get barcode() {
-        return this._barcode;
-    }
-    get machineReadableZone() {
-        return this._machineReadableZone;
-    }
-    get visualInspectionZone() {
-        return this._visualInspectionZone;
-    }
-}
-__decorate([
-    nameForSerialization('isFull')
-], SingleSideScanner.prototype, "_isFull", undefined);
-__decorate([
-    ignoreFromSerialization
-], SingleSideScanner.prototype, "_barcode", undefined);
-__decorate([
-    ignoreFromSerialization
-], SingleSideScanner.prototype, "_machineReadableZone", undefined);
-__decorate([
-    ignoreFromSerialization
-], SingleSideScanner.prototype, "_visualInspectionZone", undefined);
-
-class FullDocumentScanner extends DefaultSerializeable {
-    constructor() {
-        super();
-        this._isFull = true;
-        this._barcode = true;
-        this._machineReadableZone = true;
-        this._visualInspectionZone = true;
-        this.options = {
-            barcode: this._barcode,
-            machineReadableZone: this._machineReadableZone,
-            visualInspectionZone: this._visualInspectionZone
-        };
-    }
-}
-__decorate([
-    nameForSerialization('isFull')
-], FullDocumentScanner.prototype, "_isFull", undefined);
-__decorate([
-    ignoreFromSerialization
-], FullDocumentScanner.prototype, "_barcode", undefined);
-__decorate([
-    ignoreFromSerialization
-], FullDocumentScanner.prototype, "_machineReadableZone", undefined);
-__decorate([
-    ignoreFromSerialization
-], FullDocumentScanner.prototype, "_visualInspectionZone", undefined);
 
 class IdCaptureSettings extends DefaultSerializeable {
     constructor() {
         super();
         this.properties = {};
         this.imageToResult = {};
+        this.supportedDocuments = [];
+        this.supportedSides = SupportedSides.FrontOnly;
         this.anonymizationMode = IdCaptureSettings.idCaptureDefaults.IdCapture.IdCaptureSettings.anonymizationMode;
         this.rejectVoidedIds = IdCaptureSettings.idCaptureDefaults.IdCapture.IdCaptureSettings.rejectVoidedIds;
-        this.decodeBackOfEuropeanDrivingLicense = IdCaptureSettings.idCaptureDefaults.IdCapture.IdCaptureSettings.decodeBackOfEuropeanDrivingLicense;
-        this.acceptedDocuments = [];
-        this.rejectedDocuments = [];
-        this.scannerType = new SingleSideScanner(false, false, false);
     }
     static get idCaptureDefaults() {
         return FactoryMaker.getInstance('IdDefaults');
@@ -1955,7 +1499,248 @@ class AamvaBarcodeVerifier {
 }
 __decorate([
     ignoreFromSerialization
-], AamvaBarcodeVerifier.prototype, "controller", undefined);
+], AamvaBarcodeVerifier.prototype, "controller", void 0);
+
+class AamvaVizBarcodeComparisonResult {
+    get checksPassed() { return this.json.checksPassed; }
+    get resultDescription() { return this.json.resultDescription; }
+    get issuingCountryIsoMatch() {
+        return StringComparisonCheck
+            .fromJSON(this.json.issuingCountryIsoMatch);
+    }
+    get issuingJurisdictionIsoMatch() {
+        return StringComparisonCheck
+            .fromJSON(this.json.issuingJurisdictionIsoMatch);
+    }
+    get documentNumbersMatch() {
+        return StringComparisonCheck
+            .fromJSON(this.json.documentNumbersMatch);
+    }
+    get fullNamesMatch() {
+        return StringComparisonCheck
+            .fromJSON(this.json.fullNamesMatch);
+    }
+    get datesOfBirthMatch() {
+        return DateComparisonCheck
+            .fromJSON(this.json.datesOfBirthMatch);
+    }
+    get datesOfExpiryMatch() {
+        return DateComparisonCheck
+            .fromJSON(this.json.datesOfExpiryMatch);
+    }
+    get datesOfIssueMatch() {
+        return DateComparisonCheck
+            .fromJSON(this.json.datesOfIssueMatch);
+    }
+    get frontMismatchImage() {
+        return this.json.frontMismatchImage;
+    }
+    static fromJSON(json) {
+        const result = new AamvaVizBarcodeComparisonResult();
+        result.json = json;
+        return result;
+    }
+}
+
+class AamvaVizBarcodeComparisonVerifier {
+    constructor() {
+        this.controller = new IdCaptureController();
+    }
+    static create() {
+        return new AamvaVizBarcodeComparisonVerifier();
+    }
+    verify(capturedId) {
+        // Necessary for not exposing internal API on CapturedId, while only passing the private "json" property
+        // to native iOS and Android.
+        const capturedIdAsString = JSON.stringify(capturedId);
+        const capturedIdJsonData = JSON.parse(capturedIdAsString).json;
+        return new Promise((resolve, reject) => {
+            this.controller
+                .verifyCapturedId(JSON.stringify(capturedIdJsonData))
+                .then((json) => {
+                if (!json) {
+                    resolve(AamvaVizBarcodeComparisonResult
+                        .fromJSON(JSON.parse('{}')));
+                }
+                else {
+                    resolve(AamvaVizBarcodeComparisonResult
+                        .fromJSON(JSON.parse(json)));
+                }
+            }, reject);
+        });
+    }
+}
+__decorate([
+    ignoreFromSerialization
+], AamvaVizBarcodeComparisonVerifier.prototype, "controller", void 0);
+
+var CapturedResultType;
+(function (CapturedResultType) {
+    CapturedResultType["AAMVABarcodeResult"] = "aamvaBarcodeResult";
+    CapturedResultType["ArgentinaIdBarcodeResult"] = "argentinaIdBarcodeResult";
+    CapturedResultType["ColombiaIdBarcodeResult"] = "colombiaIdBarcodeResult";
+    CapturedResultType["ColombiaDlBarcodeResult"] = "colombiaDlBarcodeResult";
+    CapturedResultType["MRZResult"] = "mrzResult";
+    CapturedResultType["SouthAfricaDlBarcodeResult"] = "southAfricaDlBarcodeResult";
+    CapturedResultType["SouthAfricaIdBarcodeResult"] = "southAfricaIdBarcodeResult";
+    CapturedResultType["CommonAccessCardBarcodeResult"] = "commonAccessCardBarcodeResult";
+    CapturedResultType["USUniformedServicesBarcodeResult"] = "usUniformedServicesBarcodeResult";
+    CapturedResultType["USVisaVIZResult"] = "usVisaVizResult";
+    CapturedResultType["VIZResult"] = "vizResult";
+    CapturedResultType["ChinaMainlandTravelPermitMRZResult"] = "chinaMainlandTravelPermitMrzResult";
+    CapturedResultType["ChinaExitEntryPermitMRZResult"] = "chinaExitEntryPermitMrzResult";
+    CapturedResultType["ChinaOneWayPermitBackMrzResult"] = "chinaOneWayPermitBackMrzResult";
+    CapturedResultType["ChinaOneWayPermitFrontMrzResult"] = "chinaOneWayPermitFrontMrzResult";
+    CapturedResultType["ApecBusinessTravelCardMrzResult"] = "apecBusinessTravelCardMrzResult";
+})(CapturedResultType || (CapturedResultType = {}));
+
+var DocumentType;
+(function (DocumentType) {
+    DocumentType["None"] = "none";
+    DocumentType["ConsularId"] = "consularId";
+    DocumentType["DrivingLicense"] = "drivingLicense";
+    DocumentType["DrivingLicensePublicServicesCard"] = "drivingLicensePublicServicesCard";
+    DocumentType["EmploymentPass"] = "employmentPass";
+    DocumentType["FinCard"] = "finCard";
+    DocumentType["Id"] = "id";
+    DocumentType["MultipurposeId"] = "multipurposeId";
+    DocumentType["MyKad"] = "myKad";
+    DocumentType["MyKid"] = "myKid";
+    DocumentType["MyPR"] = "myPr";
+    DocumentType["MyTentera"] = "myTentera";
+    DocumentType["PanCard"] = "panCard";
+    DocumentType["ProfessionalId"] = "professionalId";
+    DocumentType["PublicServicesCard"] = "publicServicesCard";
+    DocumentType["ResidencePermit"] = "residencePermit";
+    DocumentType["ResidentId"] = "residentId";
+    DocumentType["TemporaryResidencePermit"] = "temporaryResidencePermit";
+    DocumentType["VoterId"] = "voterId";
+    DocumentType["WorkPermit"] = "workPermit";
+    DocumentType["IKad"] = "iKad";
+    DocumentType["MilitaryId"] = "militaryId";
+    DocumentType["MyKas"] = "myKas";
+    DocumentType["SocialSecurityCard"] = "socialSecurityCard";
+    DocumentType["HealthInsuranceCard"] = "healthInsuranceCard";
+    DocumentType["Passport"] = "passport";
+    DocumentType["DiplomaticPassport"] = "diplomaticPassport";
+    DocumentType["ServicePassport"] = "servicePassport";
+    DocumentType["TemporaryPassport"] = "temporaryPassport";
+    DocumentType["Visa"] = "visa";
+    DocumentType["SPass"] = "sPass";
+    DocumentType["AddressCard"] = "addressCard";
+    DocumentType["AlienId"] = "alienId";
+    DocumentType["AlienPassport"] = "alienPassport";
+    DocumentType["GreenCard"] = "greenCard";
+    DocumentType["MinorsId"] = "minorsId";
+    DocumentType["PostalId"] = "postalId";
+    DocumentType["ProfessionalDl"] = "professionalDl";
+    DocumentType["TaxId"] = "taxId";
+    DocumentType["WeaponPermit"] = "weaponPermit";
+    DocumentType["BorderCrossingCard"] = "borderCrossingCard";
+    DocumentType["DriverCard"] = "driverCard";
+    DocumentType["GlobalEntryCard"] = "globalEntryCard";
+    DocumentType["MyPolis"] = "myPolis";
+    DocumentType["NexusCard"] = "nexusCard";
+    DocumentType["PassportCard"] = "passportCard";
+    DocumentType["ProofOfAgeCard"] = "proofOfAgeCard";
+    DocumentType["RefugeeId"] = "refugeeId";
+    DocumentType["TribalId"] = "tribalId";
+    DocumentType["VeteranId"] = "veteranId";
+    DocumentType["CitizenshipCertificate"] = "citizenshipCertificate";
+    DocumentType["MyNumberCard"] = "myNumberCard";
+    DocumentType["MinorsPassport"] = "minorsPassport";
+    DocumentType["MinorsPublicServicesCard"] = "minorsPublicServicesCard";
+    DocumentType["AsylumRequest"] = "asylumRequest";
+    DocumentType["DriverQualificationCard"] = "driverQualificationCard";
+    DocumentType["ProvisionalDl"] = "provisionalDl";
+    DocumentType["RefugeePassport"] = "refugeePassport";
+    DocumentType["SpecialId"] = "specialId";
+    DocumentType["UniformedServicesId"] = "uniformedServicesId";
+    DocumentType["ImmigrantVisa"] = "immigrantVisa";
+    DocumentType["ConsularVoterId"] = "consularVoterId";
+    DocumentType["TwicCard"] = "twicCard";
+    DocumentType["ExitEntryPermit"] = "exitEntryPermit";
+    DocumentType["MainlandTravelPermitHongKongMacau"] = "mainlandTravelPermitHongKongMacau";
+    DocumentType["MainlandTravelPermitTaiwan"] = "mainlandTravelPermitTaiwan";
+    DocumentType["NbiClearance"] = "nbiClearance";
+    DocumentType["ProofOfRegistration"] = "proofOfRegistration";
+    DocumentType["TemporaryProtectionPermit"] = "temporaryProtectionPermit";
+    DocumentType["MunicipalId"] = "municipalId";
+    DocumentType["AfghanCitizenCard"] = "afghanCitizenCard";
+    DocumentType["Eid"] = "eid";
+    DocumentType["Pass"] = "pass";
+    DocumentType["SisId"] = "sisId";
+    DocumentType["MedicalMarijuanaCard"] = "medicalMarijuanaCard";
+    DocumentType["AsicCard"] = "asicCard";
+    DocumentType["BidoonCard"] = "bidoonCard";
+    DocumentType["InterimHealthInsuranceCard"] = "interimHealthInsuranceCard";
+    DocumentType["NonVoterId"] = "nonVoterId";
+    DocumentType["ReciprocalHealthInsuranceCard"] = "reciprocalHealthInsuranceCard";
+    DocumentType["VehicleRegistration"] = "vehicleRegistration";
+})(DocumentType || (DocumentType = {}));
+
+class VizMrzComparisonResult {
+    get checksPassed() { return this.json.checksPassed; }
+    get resultDescription() { return this.json.resultDescription; }
+    get issuingCountryIsoMatch() {
+        return VizMrzStringComparisonCheck
+            .fromJSON(this.json.issuingCountryIsoMatch);
+    }
+    get documentNumbersMatch() {
+        return VizMrzStringComparisonCheck
+            .fromJSON(this.json.documentNumbersMatch);
+    }
+    get fullNamesMatch() {
+        return VizMrzStringComparisonCheck
+            .fromJSON(this.json.fullNamesMatch);
+    }
+    get datesOfBirthMatch() {
+        return VizMrzDateComparisonCheck
+            .fromJSON(this.json.datesOfBirthMatch);
+    }
+    get datesOfExpiryMatch() {
+        return VizMrzDateComparisonCheck
+            .fromJSON(this.json.datesOfExpiryMatch);
+    }
+    static fromJSON(json) {
+        const result = new VizMrzComparisonResult();
+        result.json = json;
+        return result;
+    }
+}
+
+class VizMrzComparisonVerifier {
+    constructor() {
+        this.controller = new IdCaptureController();
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    static create(context) {
+        return new VizMrzComparisonVerifier();
+    }
+    verify(capturedId) {
+        // Necessary for not exposing internal API on CapturedId, while only passing the private "json" property
+        // to native iOS and Android.
+        const capturedIdAsString = JSON.stringify(capturedId);
+        const capturedIdJsonData = JSON.parse(capturedIdAsString).json;
+        return new Promise((resolve, reject) => {
+            this.controller
+                .verifyVizMrz(JSON.stringify(capturedIdJsonData))
+                .then((json) => {
+                if (!json) {
+                    resolve(VizMrzComparisonResult
+                        .fromJSON(JSON.parse('{}')));
+                }
+                else {
+                    resolve(VizMrzComparisonResult
+                        .fromJSON(JSON.parse(json)));
+                }
+            }, reject);
+        });
+    }
+}
+__decorate([
+    ignoreFromSerialization
+], VizMrzComparisonVerifier.prototype, "controller", void 0);
 
 const pluginName = 'ScanditIdNative';
 // tslint:disable-next-line:variable-name
@@ -1968,7 +1753,9 @@ var CapacitorFunction;
 (function (CapacitorFunction) {
     CapacitorFunction["GetDefaults"] = "getDefaults";
     CapacitorFunction["ResetIdCapture"] = "resetIdCapture";
+    CapacitorFunction["VerifyCapturedId"] = "verifyCapturedId";
     CapacitorFunction["VerifyCapturedIdAsync"] = "verifyCapturedIdAsync";
+    CapacitorFunction["VerifyVizMrz"] = "verifyVizMrz";
     CapacitorFunction["FinishCallback"] = "finishCallback";
     CapacitorFunction["CreateContextForBarcodeVerification"] = "createContextForBarcodeVerification";
     CapacitorFunction["SetModeEnabledState"] = "setModeEnabledState";
@@ -1996,19 +1783,35 @@ class NativeIdCaptureListenerProxy {
         this.didCaptureEventListener = await window.Capacitor.Plugins[Capacitor.pluginName]
             .addListener(IdCaptureListenerEvents.didCapture, this.notifyListeners.bind(this));
     }
+    async subscribeDidLocalizeListener() {
+        this.didLocalizeEventListener = await window.Capacitor.Plugins[Capacitor.pluginName]
+            .addListener(IdCaptureListenerEvents.didLocalize, this.notifyListeners.bind(this));
+    }
     async subscribeDidRejectListener() {
-        this.didRejectListener = await window.Capacitor.Plugins[Capacitor.pluginName]
+        this.didLocalizeEventListener = await window.Capacitor.Plugins[Capacitor.pluginName]
             .addListener(IdCaptureListenerEvents.didReject, this.notifyListeners.bind(this));
+    }
+    async subscribeDidTimeOutListener() {
+        this.didTimeoutListener = await window.Capacitor.Plugins[Capacitor.pluginName]
+            .addListener(IdCaptureListenerEvents.didTimeOut, this.notifyListeners.bind(this));
     }
     finishDidCaptureCallback(isEnabled) {
         window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.FinishCallback]({ 'result': { 'enabled': isEnabled, 'finishCallbackID': IdCaptureListenerEvents.didCapture } });
     }
+    finishDidLocalizeCallback(isEnabled) {
+        window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.FinishCallback]({ 'result': { 'enabled': isEnabled, 'finishCallbackID': IdCaptureListenerEvents.didLocalize } });
+    }
     finishDidRejectCallback(isEnabled) {
         window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.FinishCallback]({ 'result': { 'enabled': isEnabled, 'finishCallbackID': IdCaptureListenerEvents.didReject } });
     }
+    finishDidTimeOutCallback(isEnabled) {
+        window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.FinishCallback]({ 'result': { 'enabled': isEnabled, 'finishCallbackID': IdCaptureListenerEvents.didTimeOut } });
+    }
     unregisterListenerForEvents() {
         this.didCaptureEventListener.remove();
+        this.didLocalizeEventListener.remove();
         this.didRejectListener.remove();
+        this.didTimeoutListener.remove();
     }
     emitInCallback(enabled) {
         this.eventEmitter.emit(IdCaptureListenerEvents.inCallback, enabled);
@@ -2025,7 +1828,20 @@ class NativeIdCaptureListenerProxy {
             // listener subscriptions.
             return done();
         }
-        this.eventEmitter.emit(event.name, event.data);
+        switch (event.name) {
+            case IdCaptureListenerEvents.didCapture:
+                this.eventEmitter.emit(IdCaptureListenerEvents.didCapture, JSON.stringify(event));
+                break;
+            case IdCaptureListenerEvents.didLocalize:
+                this.eventEmitter.emit(IdCaptureListenerEvents.didLocalize, JSON.stringify(event));
+                break;
+            case IdCaptureListenerEvents.didReject:
+                this.eventEmitter.emit(IdCaptureListenerEvents.didReject, JSON.stringify(event));
+                break;
+            case IdCaptureListenerEvents.didTimeOut:
+                this.eventEmitter.emit(IdCaptureListenerEvents.didTimeOut, JSON.stringify(event));
+                break;
+        }
         return done();
     }
 }
@@ -2039,10 +1855,20 @@ class NativeIdCaptureProxy {
     resetMode() {
         return window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.ResetIdCapture]();
     }
+    verifyCapturedId(capturedId) {
+        return window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.VerifyCapturedId]({
+            capturedId: capturedId,
+        }).then((result) => result.data);
+    }
     verifyCapturedIdAsync(capturedId) {
         return window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.VerifyCapturedIdAsync]({
             capturedId: capturedId,
-        });
+        }).then((result) => result.data);
+    }
+    verifyVizMrz(capturedId) {
+        return window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.VerifyVizMrz]({
+            capturedId: capturedId,
+        }).then((result) => result.data);
     }
     updateIdCaptureMode(modeJson) {
         return window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.UpdateIdCaptureMode]({
@@ -2083,39 +1909,51 @@ class ScanditIdPluginImplementation {
             IdCapture,
             IdCaptureFeedback,
             IdCaptureOverlay,
+            IdCaptureSession,
             IdCaptureSettings,
+            CapturedResultType,
             DocumentType,
             IdImageType,
-            CapturedSides,
+            IdDocumentType,
+            SupportedSides,
             IdLayoutStyle,
             IdLayoutLineStyle,
+            IdLayout,
+            ComparisonCheckResult,
+            AAMVABarcodeResult,
+            AamvaVizBarcodeComparisonResult,
+            AamvaVizBarcodeComparisonVerifier,
             AamvaBarcodeVerifier,
             AamvaBarcodeVerificationStatus,
             CapturedId,
+            RejectedId,
+            LocalizedOnlyId,
             DateResult,
             MRZResult,
+            USUniformedServicesBarcodeResult,
             VIZResult,
+            ArgentinaIdBarcodeResult,
+            ColombiaIdBarcodeResult,
+            SouthAfricaDlBarcodeResult,
+            SouthAfricaIdBarcodeResult,
+            ColombiaDlBarcodeResult,
+            ChinaOneWayPermitBackMrzResult,
+            ChinaOneWayPermitFrontMrzResult,
+            ChinaExitEntryPermitMRZResult,
+            ChinaMainlandTravelPermitMRZResult,
+            ApecBusinessTravelCardMrzResult,
+            USVisaVIZResult,
+            CommonAccessCardBarcodeResult,
             IdAnonymizationMode,
             ProfessionalDrivingPermit,
             VehicleRestriction,
             AamvaBarcodeVerificationResult,
             TextHintPosition,
-            RejectionReason,
-            IdCaptureDocumentType,
-            DriverLicense,
-            HealthInsuranceCard,
-            IdCard,
-            Passport,
-            RegionSpecific,
-            ResidencePermit,
-            VisaIcao,
-            IdCaptureRegion,
-            SingleSideScanner,
-            FullDocumentScanner,
-            BarcodeResult,
-            RegionSpecificSubtype,
-            IdImages,
-            IdSide
+            VizMrzComparisonCheckResult,
+            VizMrzComparisonResult,
+            IdCaptureError,
+            VizMrzComparisonVerifier,
+            RejectionReason
         };
         return api;
     }
@@ -2128,4 +1966,4 @@ registerPlugin('ScanditIdPlugin', {
 // tslint:disable-next-line:variable-name
 const ScanditIdPlugin = new ScanditIdPluginImplementation();
 
-export { AamvaBarcodeVerificationResult, AamvaBarcodeVerificationStatus, AamvaBarcodeVerifier, BarcodeResult, CapturedId, CapturedSides, DateResult, DriverLicense, FullDocumentScanner, HealthInsuranceCard, IdAnonymizationMode, IdCapture, IdCaptureDocumentType, IdCaptureFeedback, IdCaptureOverlay, IdCaptureRegion, IdCaptureSettings, IdCard, IdImageType, IdImages, IdLayoutLineStyle, IdLayoutStyle, IdSide, MRZResult, Passport, ProfessionalDrivingPermit, RegionSpecific, RegionSpecificSubtype, RejectionReason, ResidencePermit, ScanditIdPlugin, ScanditIdPluginImplementation, SingleSideScanner, TextHintPosition, VIZResult, VehicleRestriction, VisaIcao };
+export { AAMVABarcodeResult, AamvaBarcodeVerificationResult, AamvaBarcodeVerificationStatus, AamvaBarcodeVerifier, AamvaVizBarcodeComparisonResult, AamvaVizBarcodeComparisonVerifier, ApecBusinessTravelCardMrzResult, ArgentinaIdBarcodeResult, CapturedId, CapturedResultType, ChinaExitEntryPermitMRZResult, ChinaMainlandTravelPermitMRZResult, ChinaOneWayPermitBackMrzResult, ChinaOneWayPermitFrontMrzResult, ColombiaDlBarcodeResult, ColombiaIdBarcodeResult, CommonAccessCardBarcodeResult, ComparisonCheckResult, DateResult, DocumentType, IdAnonymizationMode, IdCapture, IdCaptureError, IdCaptureFeedback, IdCaptureOverlay, IdCaptureSession, IdCaptureSettings, IdDocumentType, IdImageType, IdLayout, IdLayoutLineStyle, IdLayoutStyle, LocalizedOnlyId, MRZResult, ProfessionalDrivingPermit, RejectedId, RejectionReason, ScanditIdPlugin, ScanditIdPluginImplementation, SouthAfricaDlBarcodeResult, SouthAfricaIdBarcodeResult, SupportedSides, TextHintPosition, USUniformedServicesBarcodeResult, USVisaVIZResult, VIZResult, VehicleRestriction, VizMrzComparisonResult, VizMrzComparisonVerifier };
