@@ -65,30 +65,6 @@ class ScanditIdNative : Plugin(), Emitter {
     }
 
     @PluginMethod
-    fun verifyCapturedId(call: PluginCall) {
-        try {
-            val capturedIdJson = call.data.getString("capturedId")
-                ?: return call.reject("Request doesn't contain the captureId")
-
-            idCaptureModule.verifyCaptureId(capturedIdJson, CapacitorResult(call))
-        } catch (e: Exception) {
-            call.reject(JsonParseError(e.message).toString())
-        }
-    }
-
-    @PluginMethod
-    fun verifyVizMrz(call: PluginCall) {
-        try {
-            val capturedIdJson = call.data.getString("capturedId")
-                ?: return call.reject("Request doesn't contain the captureId")
-
-            idCaptureModule.vizMrzVerification(capturedIdJson, CapacitorResult(call))
-        } catch (e: Exception) {
-            call.reject(JsonParseError(e.message).toString())
-        }
-    }
-
-    @PluginMethod
     fun resetIdCapture(call: PluginCall) {
         idCaptureModule.resetMode()
         call.resolve()
@@ -137,14 +113,8 @@ class ScanditIdNative : Plugin(), Emitter {
                 FrameworksIdCaptureListener.ON_ID_CAPTURED_EVENT_NAME ->
                     idCaptureModule.finishDidCaptureId(resultData?.enabled == true)
 
-                FrameworksIdCaptureListener.ON_ID_LOCALIZED_EVENT_NAME ->
-                    idCaptureModule.finishDidLocalizeId(resultData?.enabled == true)
-
                 FrameworksIdCaptureListener.ON_ID_REJECTED_EVENT_NAME ->
                     idCaptureModule.finishDidRejectId(resultData?.enabled == true)
-
-                FrameworksIdCaptureListener.ON_TIMEOUT_EVENT_NAME ->
-                    idCaptureModule.finishDidTimeout(resultData?.enabled == true)
             }
         } catch (e: JSONException) {
             println(e)
@@ -177,9 +147,11 @@ class ScanditIdNative : Plugin(), Emitter {
     }
 
     override fun emit(eventName: String, payload: MutableMap<String, Any?>) {
-        payload[FIELD_EVENT_NAME] = eventName
+        val capacitorPayload = JSObject()
+        capacitorPayload.put("name", eventName)
+        capacitorPayload.put("data", JSONObject(payload).toString())
 
-        notifyListeners(eventName, JSObject.fromJSONObject(JSONObject(payload)))
+        notifyListeners(eventName, capacitorPayload)
     }
 
     @PluginMethod
@@ -194,8 +166,6 @@ class ScanditIdNative : Plugin(), Emitter {
     companion object {
         private const val FIELD_RESULT = "result"
         private const val CORE_PLUGIN_NAME = "ScanditCaptureCoreNative"
-
-        private const val FIELD_EVENT_NAME = "name"
 
         private const val WRONG_INPUT = "Wrong input parameter"
     }
