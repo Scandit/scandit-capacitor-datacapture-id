@@ -10,6 +10,5 @@ export declare class NativeIdCaptureListenerProxy implements IdCaptureListenerPr
     finishDidCaptureCallback(isEnabled: boolean): void;
     finishDidRejectCallback(isEnabled: boolean): void;
     unregisterListenerForEvents(): void;
-    private emitInCallback;
     private notifyListeners;
 }
