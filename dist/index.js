@@ -1644,7 +1644,11 @@ class IdCaptureListenerController {
             }
             let rejectedId = null;
             if (event.id != null) {
-                rejectedId = CapturedId.fromJSON(JSON.parse(event.id));
+                const rejectedIdJson = JSON.parse(event.id);
+                if (event.imageInfo) {
+                    rejectedIdJson.imageInfo = event.imageInfo;
+                }
+                rejectedId = CapturedId.fromJSON(rejectedIdJson);
             }
             this.notifyListenersOfDidReject(rejectedId, event.rejectionReason);
             this._proxy.finishDidRejectCallback(this.idCapture.isEnabled);
