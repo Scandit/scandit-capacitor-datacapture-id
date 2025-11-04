@@ -26,7 +26,7 @@ import org.json.JSONObject
 @CapacitorPlugin(name = "ScanditIdNative")
 class ScanditIdNative : Plugin(), Emitter {
 
-    private val idCaptureModule = IdCaptureModule(FrameworksIdCaptureListener(this))
+    private val idCaptureModule = IdCaptureModule(this)
 
     private var lastIdCaptureEnabledState: Boolean = false
 
@@ -43,16 +43,15 @@ class ScanditIdNative : Plugin(), Emitter {
         }
 
         idCaptureModule.onCreate(bridge.context)
-        idCaptureModule.addListener()
     }
 
     override fun handleOnStart() {
-        idCaptureModule.setModeEnabled(lastIdCaptureEnabledState)
+        idCaptureModule.setTopmostModeEnabled(lastIdCaptureEnabledState)
     }
 
     override fun handleOnStop() {
-        lastIdCaptureEnabledState = idCaptureModule.isModeEnabled()
-        idCaptureModule.setModeEnabled(false)
+        lastIdCaptureEnabledState = idCaptureModule.isTopmostModeEnabled()
+        idCaptureModule.setTopmostModeEnabled(false)
     }
 
     override fun handleOnDestroy() {
@@ -65,94 +64,37 @@ class ScanditIdNative : Plugin(), Emitter {
     }
 
     @PluginMethod
-    fun verifyCapturedId(call: PluginCall) {
-        try {
-            val capturedIdJson = call.data.getString("capturedId")
-                ?: return call.reject("Request doesn't contain the captureId")
-
-            idCaptureModule.verifyCaptureId(capturedIdJson, CapacitorResult(call))
-        } catch (e: Exception) {
-            call.reject(JsonParseError(e.message).toString())
-        }
-    }
-
-    @PluginMethod
-    fun verifyVizMrz(call: PluginCall) {
-        try {
-            val capturedIdJson = call.data.getString("capturedId")
-                ?: return call.reject("Request doesn't contain the captureId")
-
-            idCaptureModule.vizMrzVerification(capturedIdJson, CapacitorResult(call))
-        } catch (e: Exception) {
-            call.reject(JsonParseError(e.message).toString())
-        }
-    }
-
-    @PluginMethod
-    fun resetIdCapture(call: PluginCall) {
-        idCaptureModule.resetMode()
+    fun resetIdCaptureMode(call: PluginCall) {
+        idCaptureModule.resetMode(getModeId(call))
         call.resolve()
     }
 
     @PluginMethod
-    fun verifyCapturedIdAsync(call: PluginCall) {
-        try {
-            val capturedIdJson = call.data.getString("capturedId")
-                ?: return call.reject("Request doesn't contain the captureId")
-
-            idCaptureModule.verifyCapturedIdBarcode(capturedIdJson, CapacitorResult(call))
-        } catch (e: Exception) {
-            call.reject(JsonParseError(e.message).toString())
-        }
+    fun addIdCaptureListener(call: PluginCall) {
+        idCaptureModule.addListener(getModeId(call))
+        call.resolve()
     }
 
     @PluginMethod
-    fun createContextForBarcodeVerification(call: PluginCall) {
-        idCaptureModule.createContextForBarcodeVerification(CapacitorResult(call))
+    fun removeIdCaptureListener(call: PluginCall) {
+        idCaptureModule.removeListener(getModeId(call))
+        call.resolve()
     }
 
     @PluginMethod
     fun setModeEnabledState(call: PluginCall) {
-        idCaptureModule.setModeEnabled(call.data.getBoolean("enabled"))
+        idCaptureModule.setModeEnabled(getModeId(call), call.data.getBoolean("enabled"))
         call.resolve()
     }
 
     @PluginMethod
-    fun finishCallback(call: PluginCall) {
-        try {
-            val data = call.data
-            // We need the "result" field to exist ( null is also allowed )
-            if (!data.has(FIELD_RESULT)) {
-                throw JSONException("Missing $FIELD_RESULT field in response json")
-            }
-            val result: JSONObject = data.optJSONObject(FIELD_RESULT) ?: JSONObject()
+    fun finishDidCaptureCallback(call: PluginCall) {
+        idCaptureModule.finishDidCaptureId(getModeId(call), call.data.getBoolean("enabled"))
+    }
 
-            if (!result.has(FIELD_FINISH_CALLBACK_ID)) {
-                throw JSONException("Cannot recognise finish callback action with data $data")
-            }
-
-            val resultData = SerializableFinishModeCallbackData.fromJson(result)
-
-            when (result[FIELD_FINISH_CALLBACK_ID]) {
-                FrameworksIdCaptureListener.ON_ID_CAPTURED_EVENT_NAME ->
-                    idCaptureModule.finishDidCaptureId(resultData?.enabled == true)
-
-                FrameworksIdCaptureListener.ON_ID_LOCALIZED_EVENT_NAME ->
-                    idCaptureModule.finishDidLocalizeId(resultData?.enabled == true)
-
-                FrameworksIdCaptureListener.ON_ID_REJECTED_EVENT_NAME ->
-                    idCaptureModule.finishDidRejectId(resultData?.enabled == true)
-
-                FrameworksIdCaptureListener.ON_TIMEOUT_EVENT_NAME ->
-                    idCaptureModule.finishDidTimeout(resultData?.enabled == true)
-            }
-        } catch (e: JSONException) {
-            println(e)
-            call.reject(JsonParseError(e.message).toString())
-        } catch (e: RuntimeException) {
-            println(e)
-            call.reject(JsonParseError(e.message).toString())
-        }
+    @PluginMethod
+    fun finishDidRejectCallback(call: PluginCall) {
+        idCaptureModule.finishDidRejectId(getModeId(call), call.data.getBoolean("enabled"))
     }
 
     @PluginMethod
@@ -166,27 +108,33 @@ class ScanditIdNative : Plugin(), Emitter {
     fun updateIdCaptureMode(call: PluginCall) {
         val modeJson = call.data.getString("modeJson")
             ?: return call.reject(WRONG_INPUT)
-        idCaptureModule.updateModeFromJson(modeJson, CapacitorResult(call))
+        idCaptureModule.updateModeFromJson(getModeId(call), modeJson, CapacitorResult(call))
     }
 
     @PluginMethod
     fun applyIdCaptureModeSettings(call: PluginCall) {
-        val modeSettingsJson = call.data.getString("modeSettingsJson")
+        val modeSettingsJson = call.data.getString("settingsJson")
             ?: return call.reject(WRONG_INPUT)
-        idCaptureModule.applyModeSettings(modeSettingsJson, CapacitorResult(call))
+        idCaptureModule.applyModeSettings(getModeId(call), modeSettingsJson, CapacitorResult(call))
     }
 
     override fun emit(eventName: String, payload: MutableMap<String, Any?>) {
-        payload[FIELD_EVENT_NAME] = eventName
+        val capacitorPayload = JSObject()
+        capacitorPayload.put("name", eventName)
+        capacitorPayload.put("data", JSONObject(payload).toString())
 
-        notifyListeners(eventName, JSObject.fromJSONObject(JSONObject(payload)))
+        notifyListeners(eventName, capacitorPayload)
     }
 
     @PluginMethod
-    fun updateIdCaptureFeedback(call: PluginCall) {
+    fun updateFeedback(call: PluginCall) {
         val feedbackJson = call.data.getString("feedbackJson")
             ?: return call.reject(WRONG_INPUT)
-        idCaptureModule.updateFeedback(feedbackJson, CapacitorResult(call))
+        idCaptureModule.updateFeedback(getModeId(call), feedbackJson, CapacitorResult(call))
+    }
+
+    private fun getModeId(call: PluginCall): Int {
+        return call.data.getInt("modeId")
     }
 
     override fun hasListenersForEvent(eventName: String): Boolean = this.hasListeners(eventName)
@@ -194,8 +142,6 @@ class ScanditIdNative : Plugin(), Emitter {
     companion object {
         private const val FIELD_RESULT = "result"
         private const val CORE_PLUGIN_NAME = "ScanditCaptureCoreNative"
-
-        private const val FIELD_EVENT_NAME = "name"
 
         private const val WRONG_INPUT = "Wrong input parameter"
     }

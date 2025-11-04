@@ -1,3 +1,4 @@
+import { CapacitorNativeCaller } from 'scandit-capacitor-datacapture-core';
 import { IdDefaults } from 'scandit-datacapture-frameworks-id';
 export declare const Capacitor: {
     pluginName: string;
@@ -13,11 +14,7 @@ export interface CapacitorWindow extends Window {
 export declare enum CapacitorFunction {
     GetDefaults = "getDefaults",
     ResetIdCapture = "resetIdCapture",
-    VerifyCapturedId = "verifyCapturedId",
-    VerifyCapturedIdAsync = "verifyCapturedIdAsync",
-    VerifyVizMrz = "verifyVizMrz",
     FinishCallback = "finishCallback",
-    CreateContextForBarcodeVerification = "createContextForBarcodeVerification",
     SetModeEnabledState = "setModeEnabledState",
     UpdateIdCaptureOverlay = "updateIdCaptureOverlay",
     UpdateIdCaptureMode = "updateIdCaptureMode",
@@ -25,3 +22,4 @@ export declare enum CapacitorFunction {
     UpdateIdCaptureFeedback = "updateIdCaptureFeedback"
 }
 export declare const getDefaults: () => Promise<void>;
+export declare const capacitorIdNativeCaller: CapacitorNativeCaller;
