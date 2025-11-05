@@ -32,17 +32,12 @@ buildscript {
             } else {
                 ext.rootTargetCompatibility = JavaVersion.VERSION_17
             }
-
-            if (ext.rootTargetCompatibility == JavaVersion.VERSION_21) {
-                ext.kotlin_version = "1.9.25"
-                ext.agp_version = "8.7.2"
-            }
         }
     }
 
     ext {
-        kotlin_version = "1.9.25"
-        agp_version = "8.5.2"
+        kotlin_version = "1.8.20"
+        agp_version = "8.5.1"
         rootSourceCompatibility = JavaVersion.VERSION_17
         rootTargetCompatibility = JavaVersion.VERSION_17
     }
@@ -65,7 +60,7 @@ android {
     namespace "com.scandit.capacitor.datacapture.id"
     compileSdkVersion project.hasProperty('compileSdkVersion') ? rootProject.ext.compileSdkVersion : 33
     defaultConfig {
-        minSdkVersion project.hasProperty('minSdkVersion') ? rootProject.ext.minSdkVersion : 24
+        minSdkVersion project.hasProperty('minSdkVersion') ? rootProject.ext.minSdkVersion : 23
         targetSdkVersion project.hasProperty('targetSdkVersion') ? rootProject.ext.targetSdkVersion : 33
         versionCode 1
         versionName "1.0"
@@ -91,7 +86,7 @@ repositories {
 }
 
 dependencies {
-    def sdk_version = "8.0.0"
+    def sdk_version = "7.2.5"
 
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation fileTree(dir: 'library', include: ['*.aar'])
