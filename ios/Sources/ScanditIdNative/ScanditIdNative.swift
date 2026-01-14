@@ -9,6 +9,7 @@ import Foundation
 import ScanditCapacitorDatacaptureCore
 import ScanditFrameworksId
 
+
 struct IdCaptureCallbackResult: BlockingListenerCallbackResult {
     struct ResultJSON: Decodable {
         let enabled: Bool?
@@ -33,15 +34,15 @@ public class ScanditIdNative: CAPPlugin, CAPBridgedPlugin {
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "getDefaults", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "resetIdCaptureMode", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "setModeEnabledState", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "addIdCaptureListener", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "removeIdCaptureListener", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "finishDidCaptureCallback", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "finishDidRejectCallback", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setModeEnabledState", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "updateIdCaptureOverlay", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "updateIdCaptureMode", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "applyIdCaptureModeSettings", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "updateFeedback", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "updateIdCaptureFeedback", returnType: CAPPluginReturnPromise),
     ]
     var idModule: IdCaptureModule!
 
@@ -54,6 +55,7 @@ public class ScanditIdNative: CAPPlugin, CAPBridgedPlugin {
     func onReset() {
         idModule.didStop()
     }
+
 
     // MARK: Defaults
 
@@ -159,8 +161,8 @@ public class ScanditIdNative: CAPPlugin, CAPBridgedPlugin {
         idModule.applyModeSettings(modeId: modeId, modeSettingsJson: modeSettingsJson, result: CapacitorResult(call))
     }
 
-    @objc(updateFeedback:)
-    func updateFeedback(_ call: CAPPluginCall) {
+    @objc(updateIdCaptureFeedback:)
+    func updateIdCaptureFeedback(_ call: CAPPluginCall) {
         guard let modeId = call.getInt("modeId") else {
             call.reject(CommandError.noModeIdParameter.toJSONString())
             return
