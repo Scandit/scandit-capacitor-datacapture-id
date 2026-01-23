@@ -14,7 +14,9 @@ export interface CapacitorWindow extends Window {
 export declare enum CapacitorFunction {
     GetDefaults = "getDefaults",
     ResetIdCapture = "resetIdCapture",
+    VerifyCapturedIdAsync = "verifyCapturedIdAsync",
     FinishCallback = "finishCallback",
+    CreateContextForBarcodeVerification = "createContextForBarcodeVerification",
     SetModeEnabledState = "setModeEnabledState",
     UpdateIdCaptureOverlay = "updateIdCaptureOverlay",
     UpdateIdCaptureMode = "updateIdCaptureMode",

@@ -1,4 +1,4 @@
-import { nameForSerialization, ignoreFromSerializationIfNull, DefaultSerializeable, Feedback, ignoreFromSerialization, CameraSettings, FactoryMaker, Brush, BaseNewController, EventDataParser, createNativeProxy, Sound, Color } from 'scandit-capacitor-datacapture-core/dist/core';
+import { nameForSerialization, ignoreFromSerialization, DefaultSerializeable, Feedback, CameraSettings, FactoryMaker, Brush, BaseController, EventDataParser, BaseNewController, createNativeProxy, Color } from 'scandit-capacitor-datacapture-core/dist/core';
 import { registerPlugin } from '@capacitor/core';
 import { CapacitorNativeCaller, capacitorExec, CapacitorCore } from 'scandit-capacitor-datacapture-core';
 
@@ -13,7 +13,7 @@ class DateResult {
         return new Date(Date.UTC(this.json.year, this.json.month ? this.json.month - 1 : 1, this.json.day || 1));
     }
     static fromJSON(json) {
-        if (json === null || json === undefined) {
+        if (json === null) {
             return null;
         }
         const dateResult = new DateResult();
@@ -21,17 +21,6 @@ class DateResult {
         return dateResult;
     }
 }
-
-var DataConsistencyCheck;
-(function (DataConsistencyCheck) {
-    DataConsistencyCheck["IssuingCountryComparison"] = "issuingCountryComparison";
-    DataConsistencyCheck["IssuingJurisdictionComparison"] = "issuingJurisdictionComparison";
-    DataConsistencyCheck["FullNameComparison"] = "fullNameComparison";
-    DataConsistencyCheck["DocumentNumberComparison"] = "documentNumberComparison";
-    DataConsistencyCheck["DateOfBirthComparison"] = "dateOfBirthComparison";
-    DataConsistencyCheck["DateOfExpiryComparison"] = "dateOfExpiryComparison";
-    DataConsistencyCheck["DateOfIssueComparison"] = "dateOfIssueComparison";
-})(DataConsistencyCheck || (DataConsistencyCheck = {}));
 
 var IdAnonymizationMode;
 (function (IdAnonymizationMode) {
@@ -351,6 +340,7 @@ var RegionSpecificSubtype;
     RegionSpecificSubtype["ApecBusinessTravelCard"] = "apecBusinessTravelCard";
     RegionSpecificSubtype["PakistanAfghanCitizenCard"] = "pakistanAfghanCitizenCard";
     RegionSpecificSubtype["SingaporeFinCard"] = "singaporeFinCard";
+    RegionSpecificSubtype["UsGreenCard"] = "usGreenCard";
     RegionSpecificSubtype["MalaysiaIkad"] = "malaysiaIkad";
     RegionSpecificSubtype["MalaysiaMykad"] = "malaysiaMykad";
     RegionSpecificSubtype["MalaysiaMypr"] = "malaysiaMypr";
@@ -517,13 +507,6 @@ __decorate([
     nameForSerialization('years')
 ], Duration.prototype, "_years", void 0);
 
-var Sex;
-(function (Sex) {
-    Sex["Female"] = "female";
-    Sex["Male"] = "male";
-    Sex["Unspecified"] = "unspecified";
-})(Sex || (Sex = {}));
-
 function getIdDefaults() {
     return FactoryMaker.getInstance('IdDefaults');
 }
@@ -534,8 +517,6 @@ function parseIdDefaults(jsonDefaults) {
                 idCaptured: Feedback.fromJSON(JSON.parse(jsonDefaults.IdCaptureFeedback).idCaptured),
                 idRejected: Feedback.fromJSON(JSON.parse(jsonDefaults.IdCaptureFeedback).idRejected),
             },
-            DefaultSuccessSound: Sound.fromJSON(JSON.parse(jsonDefaults.defaultSuccessSound)),
-            DefaultFailureSound: Sound.fromJSON(JSON.parse(jsonDefaults.defaultFailureSound)),
             RecommendedCameraSettings: CameraSettings
                 .fromJSON(jsonDefaults.RecommendedCameraSettings),
             IdCaptureOverlayDefaults: {
@@ -560,8 +541,6 @@ function parseIdDefaults(jsonDefaults) {
                         .fromJSON(jsonDefaults.IdCaptureOverlay.DefaultRejectedBrush.strokeColor),
                     strokeWidth: jsonDefaults.IdCaptureOverlay.DefaultRejectedBrush.strokeWidth,
                 },
-                defaultIdLayoutStyle: jsonDefaults.IdCaptureOverlay.defaultIdLayoutStyle,
-                defaultIdLayoutLineStyle: jsonDefaults.IdCaptureOverlay.defaultIdLayoutLineStyle,
             },
             IdCaptureSettings: {
                 anonymizationMode: jsonDefaults.IdCaptureSettings.anonymizationMode,
@@ -593,6 +572,9 @@ var AamvaBarcodeVerificationStatus;
 })(AamvaBarcodeVerificationStatus || (AamvaBarcodeVerificationStatus = {}));
 
 class AamvaBarcodeVerificationResult {
+    /**
+     * @deprecated
+     */
     get allChecksPassed() { return this.json.allChecksPassed; }
     get status() {
         return this._status;
@@ -615,11 +597,283 @@ class AamvaBarcodeVerificationResult {
     }
 }
 
+class IdCaptureController extends BaseController {
+    // This is also accpeting null here because the AamvaBarcodeVerifier is using this controller.
+    // Once we remove the AamvaBarcodeVerifier, we can remove the null here.
+    constructor(idCapture = null) {
+        super('IdCaptureProxy');
+        this.idCapture = null;
+        this.idCapture = idCapture;
+    }
+    reset() {
+        return this._proxy.resetMode();
+    }
+    createContextForBarcodeVerification(context) {
+        return this._proxy.createContextForBarcodeVerification(JSON.stringify(context.toJSON()));
+    }
+    verifyCapturedIdAsync(capturedId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const result = yield this._proxy.verifyCapturedIdAsync(capturedId);
+            if (result == null) {
+                return null;
+            }
+            return result.data;
+        });
+    }
+    setModeEnabledState(enabled) {
+        this._proxy.setModeEnabledState(enabled);
+    }
+    updateIdCaptureMode() {
+        if (this.idCapture == null) {
+            throw new Error('IdCaptureController is not initialized with an IdCapture instance');
+        }
+        return this._proxy.updateIdCaptureMode(JSON.stringify(this.idCapture.toJSON()));
+    }
+    applyIdCaptureModeSettings(newSettings) {
+        return this._proxy.applyIdCaptureModeSettings(JSON.stringify(newSettings.toJSON()));
+    }
+    updateFeedback(feedback) {
+        return this._proxy.updateFeedback(JSON.stringify(feedback.toJSON()));
+    }
+}
+
+var IdCaptureListenerEvents;
+(function (IdCaptureListenerEvents) {
+    IdCaptureListenerEvents["didCapture"] = "IdCaptureListener.didCaptureId";
+    IdCaptureListenerEvents["didReject"] = "IdCaptureListener.didRejectId";
+})(IdCaptureListenerEvents || (IdCaptureListenerEvents = {}));
+
+class MRZResult {
+    get documentCode() { return this.json.documentCode; }
+    get namesAreTruncated() { return this.json.namesAreTruncated; }
+    /**
+     * @deprecated Use optionalDataInLine1 and optionalDataInLine2 instead. This property will be removed in SDK version 8.0.
+     */
+    get optional() { return this.json.optional; }
+    /**
+     * @deprecated Use optionalDataInLine1 and optionalDataInLine2 instead. This property will be removed in SDK version 8.0.
+     */
+    get optional1() { return this.json.optional1; }
+    get optionalDataInLine1() { return this.json.optionalDataInLine1; }
+    get optionalDataInLine2() { return this.json.optionalDataInLine2; }
+    get capturedMrz() { return this.json.capturedMrz; }
+    get personalIdNumber() { return this.json.personalIdNumber; }
+    get renewalTimes() { return this.json.renewalTimes; }
+    get fullNameSimplifiedChinese() { return this.json.fullNameSimplifiedChinese; }
+    get omittedCharacterCountInGbkName() { return this.json.omittedCharacterCountInGbkName; }
+    get omittedNameCount() { return this.json.omittedNameCount; }
+    get issuingAuthorityCode() { return this.json.issuingAuthorityCode; }
+    get passportIssuerIso() { return this.json.passportIssuerIso; }
+    get passportNumber() { return this.json.passportNumber; }
+    get passportDateOfExpiry() {
+        return DateResult.fromJSON(this.json.passportDateOfExpiry);
+    }
+    static fromJSON(json) {
+        const result = new MRZResult();
+        result.json = json;
+        return result;
+    }
+}
+
+class CommonCapturedIdFields {
+    get firstName() { return this.json.firstName; }
+    get lastName() { return this.json.lastName; }
+    get fullName() { return this.json.fullName; }
+    get secondaryLastName() { return this.json.secondaryLastName; }
+    get sex() { return this.json.sex; }
+    get dateOfBirth() {
+        return DateResult.fromJSON(this.json.dateOfBirth);
+    }
+    get age() { return this.json.age; }
+    get isExpired() { return this.json.isExpired; }
+    get nationality() { return this.json.nationality; }
+    get address() { return this.json.address; }
+    get documentAdditionalNumber() { return this.json.documentAdditionalNumber; }
+    get documentType() { return this.json.documentType; }
+    get documentSubtype() { return this.json.documentSubtype; }
+    get documentNumber() { return this.json.documentNumber; }
+    get issuingCountry() { return this.json.issuingCountry; }
+    get issuingCountryIso() { return this.json.issuingCountryIso; }
+    get dateOfExpiry() {
+        return DateResult.fromJSON(this.json.dateOfExpiry);
+    }
+    get dateOfIssue() {
+        return DateResult.fromJSON(this.json.dateOfIssue);
+    }
+    static fromJSON(json, existingInstance) {
+        if (json === null) {
+            return null;
+        }
+        const firstName = json.firstName;
+        const lastName = json.lastName;
+        const fullName = json.fullName;
+        const secondaryLastName = json.secondaryLastName;
+        const sex = json.sex;
+        const dateOfBirth = DateResult.fromJSON(json.dateOfBirth);
+        const age = json.age;
+        const isExpired = json.isExpired;
+        const nationality = json.nationality;
+        const address = json.address;
+        const documentType = json.documentType;
+        const documentSubtype = json.documentSubtype;
+        const documentNumber = json.documentNumber;
+        const issuingCountry = json.issuingCountry;
+        const issuingCountryIso = json.issuingCountryIso;
+        const dateOfExpiry = DateResult.fromJSON(json.dateOfExpiry);
+        const dateOfIssue = DateResult.fromJSON(json.dateOfIssue);
+        if (existingInstance) {
+            if (!existingInstance.firstName) {
+                json.firstName = firstName;
+            }
+            if (!existingInstance.lastName) {
+                json.lastName = lastName;
+            }
+            if (!existingInstance.fullName) {
+                json.fullName = fullName;
+            }
+            if (!existingInstance.secondaryLastName) {
+                json.secondaryLastName = secondaryLastName;
+            }
+            if (!existingInstance.sex) {
+                json.sex = sex;
+            }
+            if (!existingInstance.dateOfBirth) {
+                json.dateOfBirth = dateOfBirth;
+            }
+            if (!existingInstance.age) {
+                json.age = age;
+            }
+            if (!existingInstance.isExpired) {
+                json.isExpired = isExpired;
+            }
+            if (!existingInstance.nationality) {
+                json.nationality = nationality;
+            }
+            if (!existingInstance.address) {
+                json.address = address;
+            }
+            if (!existingInstance.documentType) {
+                json.documentType = documentType;
+            }
+            if (!existingInstance.documentSubtype) {
+                json.documentSubtype = documentSubtype;
+            }
+            if (!existingInstance.documentNumber) {
+                json.documentNumber = documentNumber;
+            }
+            if (!existingInstance.issuingCountry) {
+                json.issuingCountry = issuingCountry;
+            }
+            if (!existingInstance.issuingCountryIso) {
+                json.issuingCountryIso = issuingCountryIso;
+            }
+            if (!existingInstance.dateOfExpiry) {
+                json.dateOfExpiry = dateOfExpiry;
+            }
+            if (!existingInstance.dateOfIssue) {
+                json.dateOfIssue = dateOfIssue;
+            }
+        }
+        const object = new CommonCapturedIdFields();
+        object.json = json;
+        return object;
+    }
+}
+
+class VIZResult {
+    get additionalAddressInformation() {
+        return this.json.additionalAddressInformation;
+    }
+    get additionalNameInformation() {
+        return this.json.additionalNameInformation;
+    }
+    get documentAdditionalNumber() {
+        return this.json.documentAdditionalNumber;
+    }
+    get employer() {
+        return this.json.employer;
+    }
+    get issuingAuthority() {
+        return this.json.issuingAuthority;
+    }
+    get issuingJurisdiction() {
+        return this.json.issuingJurisdiction;
+    }
+    get issuingJurisdictionIso() {
+        return this.json.issuingJurisdictionIso;
+    }
+    get maritalStatus() {
+        return this.json.maritalStatus;
+    }
+    get personalIdNumber() {
+        return this.json.personalIdNumber;
+    }
+    get placeOfBirth() {
+        return this.json.placeOfBirth;
+    }
+    get profession() {
+        return this.json.profession;
+    }
+    get race() {
+        return this.json.race;
+    }
+    get religion() {
+        return this.json.religion;
+    }
+    get residentialStatus() {
+        return this.json.residentialStatus;
+    }
+    get usRealIdStatus() {
+        return this.json.usRealIdStatus;
+    }
+    get capturedSides() {
+        return this.json.capturedSides;
+    }
+    get isBackSideCaptureSupported() {
+        return this.json.isBackSideCaptureSupported;
+    }
+    get bloodType() {
+        return this.json.bloodType;
+    }
+    get sponsor() {
+        return this.json.sponsor;
+    }
+    get mothersName() {
+        return this.json.mothersName;
+    }
+    get fathersName() {
+        return this.json.fathersName;
+    }
+    get passportNumber() {
+        return this.json.passportNumber;
+    }
+    get visaNumber() {
+        return this.json.visaNumber;
+    }
+    get firstName() {
+        return this.json.firstName;
+    }
+    get lastName() {
+        return this.json.lastName;
+    }
+    get secondaryLastName() {
+        return this.json.secondaryLastName;
+    }
+    get fullName() {
+        return this.json.fullName;
+    }
+    static fromJSON(json) {
+        const result = new VIZResult();
+        result.json = json;
+        return result;
+    }
+}
+
 class ProfessionalDrivingPermit {
     get dateOfExpiry() { return DateResult.fromJSON(this.json.dateOfExpiry); }
     get codes() { return this.json.codes; }
     static fromJSON(json) {
-        if (json === null || json === undefined) {
+        if (json === null) {
             return null;
         }
         const object = new ProfessionalDrivingPermit();
@@ -897,190 +1151,6 @@ class BarcodeResult {
     }
     get barcodeDataElements() {
         return this.json.barcodeDataElements;
-    }
-    // Common Fields
-    get firstName() { return this.json.firstName; }
-    get lastName() { return this.json.lastName; }
-    get fullName() { return this.json.fullName; }
-    get sex() { return this.json.sex; }
-    get dateOfBirth() { return DateResult.fromJSON(this.json.dateOfBirth); }
-    get nationality() { return this.json.nationality; }
-    get address() { return this.json.address; }
-    get documentNumber() { return this.json.documentNumber; }
-    get dateOfExpiry() { return DateResult.fromJSON(this.json.dateOfExpiry); }
-    get dateOfIssue() { return DateResult.fromJSON(this.json.dateOfIssue); }
-}
-
-class MRZResult {
-    get documentCode() { return this.json.documentCode; }
-    get namesAreTruncated() { return this.json.namesAreTruncated; }
-    get optionalDataInLine1() { return this.json.optionalDataInLine1; }
-    get optionalDataInLine2() { return this.json.optionalDataInLine2; }
-    get capturedMrz() { return this.json.capturedMrz; }
-    get personalIdNumber() { return this.json.personalIdNumber; }
-    get renewalTimes() { return this.json.renewalTimes; }
-    get fullNameSimplifiedChinese() { return this.json.fullNameSimplifiedChinese; }
-    get omittedCharacterCountInGbkName() { return this.json.omittedCharacterCountInGbkName; }
-    get omittedNameCount() { return this.json.omittedNameCount; }
-    get issuingAuthorityCode() { return this.json.issuingAuthorityCode; }
-    get passportIssuerIso() { return this.json.passportIssuerIso; }
-    get passportNumber() { return this.json.passportNumber; }
-    get passportDateOfExpiry() {
-        return DateResult.fromJSON(this.json.passportDateOfExpiry);
-    }
-    // Common Fields
-    get firstName() { return this.json.firstName; }
-    get lastName() { return this.json.lastName; }
-    get fullName() { return this.json.fullName; }
-    get sex() { return this.json.sex; }
-    get dateOfBirth() { return DateResult.fromJSON(this.json.dateOfBirth); }
-    get nationality() { return this.json.nationality; }
-    get address() { return this.json.address; }
-    get documentNumber() { return this.json.documentNumber; }
-    get dateOfExpiry() { return DateResult.fromJSON(this.json.dateOfExpiry); }
-    get dateOfIssue() { return DateResult.fromJSON(this.json.dateOfIssue); }
-    static fromJSON(json) {
-        const result = new MRZResult();
-        result.json = json;
-        return result;
-    }
-}
-
-class DrivingLicenseCategory {
-    get code() { return this.json.code; }
-    get dateOfIssue() {
-        return DateResult.fromJSON(this.json.dateOfIssue);
-    }
-    get dateOfExpiry() {
-        return DateResult.fromJSON(this.json.dateOfExpiry);
-    }
-    static fromJSON(json) {
-        if (json === null || json === undefined) {
-            return null;
-        }
-        const result = new DrivingLicenseCategory();
-        result.json = json;
-        return result;
-    }
-}
-
-class DrivingLicenseDetails {
-    constructor() {
-        this._drivingLicenseCategories = [];
-    }
-    get drivingLicenseCategories() {
-        if (this._drivingLicenseCategories.length === 0) {
-            this._drivingLicenseCategories = this.json.drivingLicenseCategories.map(categoryJson => DrivingLicenseCategory.fromJSON(categoryJson)).filter(category => category !== null);
-        }
-        return this._drivingLicenseCategories;
-    }
-    get restrictions() {
-        return this.json.restrictions;
-    }
-    get endorsements() {
-        return this.json.endorsements;
-    }
-    static fromJSON(json) {
-        if (json === null) {
-            return null;
-        }
-        const result = new DrivingLicenseDetails();
-        result.json = json;
-        return result;
-    }
-}
-
-class VIZResult {
-    get additionalAddressInformation() {
-        return this.json.additionalAddressInformation;
-    }
-    get additionalNameInformation() {
-        return this.json.additionalNameInformation;
-    }
-    get documentAdditionalNumber() {
-        return this.json.documentAdditionalNumber;
-    }
-    get employer() {
-        return this.json.employer;
-    }
-    get issuingAuthority() {
-        return this.json.issuingAuthority;
-    }
-    get issuingJurisdiction() {
-        return this.json.issuingJurisdiction;
-    }
-    get issuingJurisdictionIso() {
-        return this.json.issuingJurisdictionIso;
-    }
-    get maritalStatus() {
-        return this.json.maritalStatus;
-    }
-    get personalIdNumber() {
-        return this.json.personalIdNumber;
-    }
-    get placeOfBirth() {
-        return this.json.placeOfBirth;
-    }
-    get profession() {
-        return this.json.profession;
-    }
-    get race() {
-        return this.json.race;
-    }
-    get religion() {
-        return this.json.religion;
-    }
-    get residentialStatus() {
-        return this.json.residentialStatus;
-    }
-    get usRealIdStatus() {
-        return this.json.usRealIdStatus;
-    }
-    get capturedSides() {
-        return this.json.capturedSides;
-    }
-    get isBackSideCaptureSupported() {
-        return this.json.isBackSideCaptureSupported;
-    }
-    get bloodType() {
-        return this.json.bloodType;
-    }
-    get sponsor() {
-        return this.json.sponsor;
-    }
-    get mothersName() {
-        return this.json.mothersName;
-    }
-    get fathersName() {
-        return this.json.fathersName;
-    }
-    get passportNumber() {
-        return this.json.passportNumber;
-    }
-    get visaNumber() {
-        return this.json.visaNumber;
-    }
-    get vehicleOwner() {
-        return this.json.vehicleOwner;
-    }
-    get drivingLicenseDetails() {
-        return DrivingLicenseDetails.fromJSON(this.json.drivingLicenseDetails);
-    }
-    // Common Fields
-    get firstName() { return this.json.firstName; }
-    get lastName() { return this.json.lastName; }
-    get fullName() { return this.json.fullName; }
-    get sex() { return this.json.sex; }
-    get dateOfBirth() { return DateResult.fromJSON(this.json.dateOfBirth); }
-    get nationality() { return this.json.nationality; }
-    get address() { return this.json.address; }
-    get documentNumber() { return this.json.documentNumber; }
-    get dateOfExpiry() { return DateResult.fromJSON(this.json.dateOfExpiry); }
-    get dateOfIssue() { return DateResult.fromJSON(this.json.dateOfIssue); }
-    static fromJSON(json) {
-        const result = new VIZResult();
-        result.json = json;
-        return result;
     }
 }
 
@@ -1368,207 +1438,27 @@ __decorate([
     nameForSerialization('documentType')
 ], VisaIcao.prototype, "_documentType", void 0);
 
-class MobileDocumentOCRResult {
-    get firstName() {
-        return this.json.firstName;
-    }
-    get lastName() {
-        return this.json.lastName;
-    }
-    get fullName() {
-        return this.json.fullName;
-    }
-    get dateOfBirth() {
-        return DateResult.fromJSON(this.json.dateOfBirth);
-    }
-    get documentNumber() {
-        return this.json.documentNumber;
-    }
-    get dateOfExpiry() {
-        return DateResult.fromJSON(this.json.dateOfExpiry);
-    }
-    get issuingJurisdiction() {
-        return this.json.issuingJurisdiction;
-    }
-    get issuingJurisdictionIso() {
-        return this.json.issuingJurisdictionIso;
-    }
-    get sex() {
-        return this.json.sex;
-    }
-    get nationality() {
-        return this.json.nationality;
-    }
-    get address() {
-        return this.json.address;
-    }
-    get documentAdditionalNumber() {
-        return this.json.documentAdditionalNumber;
-    }
-    get dateOfIssue() {
-        return DateResult.fromJSON(this.json.dateOfIssue);
-    }
-    static fromJSON(json) {
-        if (json === null) {
-            return null;
-        }
-        const result = new MobileDocumentOCRResult();
-        result.json = json;
-        return result;
-    }
-}
-
-class MobileDocumentResult {
-    constructor() {
-        this._drivingLicenseCategories = [];
-    }
-    get portrait() {
-        return this.json.portrait;
-    }
-    get issuingAuthority() {
-        return this.json.issuingAuthority;
-    }
-    get administrativeNumber() {
-        return this.json.administrativeNumber;
-    }
-    get height() {
-        return this.json.height;
-    }
-    get weight() {
-        return this.json.weight;
-    }
-    get eyeColor() {
-        return this.json.eyeColor;
-    }
-    get hairColor() {
-        return this.json.hairColor;
-    }
-    get birthPlace() {
-        return this.json.birthPlace;
-    }
-    get drivingLicenseCategories() {
-        if (this._drivingLicenseCategories.length === 0) {
-            this._drivingLicenseCategories = this.json.drivingLicenseCategories.map(categoryJson => DrivingLicenseCategory.fromJSON(categoryJson)).filter(category => category !== null);
-        }
-        return this._drivingLicenseCategories;
-    }
-    get residentCity() {
-        return this.json.residentCity;
-    }
-    get residentCountry() {
-        return this.json.residentCountry;
-    }
-    get firstName() {
-        return this.json.firstName;
-    }
-    get lastName() {
-        return this.json.lastName;
-    }
-    get fullName() {
-        return this.json.fullName;
-    }
-    get sex() {
-        return this.json.sex;
-    }
-    get dateOfBirth() {
-        return DateResult.fromJSON(this.json.dateOfBirth);
-    }
-    get age() {
-        return this.json.age;
-    }
-    get nationality() {
-        return this.json.nationality;
-    }
-    get address() {
-        return this.json.address;
-    }
-    get issuingCountryIso() {
-        return this.json.issuingCountryIso;
-    }
-    get issuingJurisdictionIso() {
-        return this.json.issuingJurisdictionIso;
-    }
-    get documentNumber() {
-        return this.json.documentNumber;
-    }
-    get dateOfExpiry() {
-        return DateResult.fromJSON(this.json.dateOfExpiry);
-    }
-    get dateOfIssue() {
-        return DateResult.fromJSON(this.json.dateOfIssue);
-    }
-    static fromJSON(json) {
-        if (json === null) {
-            return null;
-        }
-        const result = new MobileDocumentResult();
-        result.json = json;
-        return result;
-    }
-}
-
-class DataConsistencyResult {
-    get allChecksPassed() {
-        return this.json.allChecksPassed;
-    }
-    get failedChecks() {
-        return this.json.failedChecks.map(check => check);
-    }
-    get skippedChecks() {
-        return this.json.skippedChecks.map(check => check);
-    }
-    get passedChecks() {
-        return this.json.passedChecks.map(check => check);
-    }
-    get frontReviewImage() {
-        return this.json.frontReviewImage;
-    }
-    static fromJSON(json) {
-        if (json === null || json === undefined) {
-            return null;
-        }
-        const result = new DataConsistencyResult();
-        result.json = json;
-        return result;
-    }
-}
-
-class VerificationResult {
-    constructor() {
-        this.json = null;
-        this._dataConsistency = null;
-        this._aamvaBarcodeVerification = null;
-    }
-    get dataConsistency() {
-        var _a;
-        if (this._dataConsistency == null && ((_a = this.json) === null || _a === void 0 ? void 0 : _a.dataConsistencyResult) != null) {
-            this._dataConsistency = DataConsistencyResult.fromJSON(this.json.dataConsistencyResult);
-        }
-        return this._dataConsistency;
-    }
-    get aamvaBarcodeVerification() {
-        var _a;
-        if (this._aamvaBarcodeVerification == null && ((_a = this.json) === null || _a === void 0 ? void 0 : _a.aamvaBarcodeVerification) != null) {
-            this._aamvaBarcodeVerification = AamvaBarcodeVerificationResult.fromJSON(this.json.aamvaBarcodeVerification);
-        }
-        return this._aamvaBarcodeVerification;
-    }
-    static fromJSON(json) {
-        if (json === null || json === undefined) {
-            return new VerificationResult();
-        }
-        const result = new VerificationResult();
-        result.json = json;
-        return result;
-    }
-}
-
 class CapturedId {
     constructor() {
         this._document = null;
-        this._mobileDocument = null;
-        this._mobileDocumentOcr = null;
-        this._verificationResult = null;
+    }
+    get firstName() {
+        return this.commonCapturedFields.firstName;
+    }
+    get lastName() {
+        return this.commonCapturedFields.lastName;
+    }
+    get fullName() {
+        return this.commonCapturedFields.fullName;
+    }
+    get secondaryLastName() {
+        return this.commonCapturedFields.secondaryLastName;
+    }
+    get sex() {
+        return this.commonCapturedFields.sex;
+    }
+    get dateOfBirth() {
+        return DateResult.fromJSON(this.commonCapturedFields.dateOfBirth);
     }
     get age() {
         return this.json.age;
@@ -1576,20 +1466,32 @@ class CapturedId {
     get isExpired() {
         return this.json.isExpired;
     }
-    get isCitizenPassport() {
-        return this.json.isCitizenPassport;
+    get nationality() {
+        return this.commonCapturedFields.nationality;
+    }
+    get address() {
+        return this.commonCapturedFields.address;
     }
     get document() {
         return this._document;
     }
     get issuingCountryIso() {
-        return this.json.issuingCountryIso;
+        return this.commonCapturedFields.issuingCountryIso;
     }
     get issuingCountry() {
-        return this.json.issuingCountry;
+        return this.commonCapturedFields.issuingCountry;
     }
     get documentAdditionalNumber() {
-        return this.json.documentAdditionalNumber;
+        return this.commonCapturedFields.documentAdditionalNumber;
+    }
+    get documentNumber() {
+        return this.commonCapturedFields.documentNumber;
+    }
+    get dateOfExpiry() {
+        return DateResult.fromJSON(this.commonCapturedFields.dateOfExpiry);
+    }
+    get dateOfIssue() {
+        return DateResult.fromJSON(this.commonCapturedFields.dateOfIssue);
     }
     get barcode() {
         if (this._barcodeResult == null && this.json.barcodeResult != null) {
@@ -1653,56 +1555,20 @@ class CapturedId {
     get images() {
         return this._images;
     }
-    get firstName() { return this.json.firstName; }
-    get lastName() { return this.json.lastName; }
-    get fullName() { return this.json.fullName; }
-    get sex() { return this.json.sex; }
-    get dateOfBirth() { return DateResult.fromJSON(this.json.dateOfBirth); }
-    get nationality() { return this.json.nationality; }
-    get address() { return this.json.address; }
-    get documentNumber() { return this.json.documentNumber; }
-    get dateOfExpiry() { return DateResult.fromJSON(this.json.dateOfExpiry); }
-    get dateOfIssue() { return DateResult.fromJSON(this.json.dateOfIssue); }
-    get sexType() {
-        if (this.json.sex) {
-            return this.json.sex;
-        }
-        return Sex.Unspecified;
-    }
-    get mobileDocument() {
-        if (this._mobileDocument === null && this.json.mobileDocument !== null) {
-            this._mobileDocument = MobileDocumentResult.fromJSON(this.json.mobileDocument);
-        }
-        return this._mobileDocument;
-    }
-    /**
-     * The additional information extracted from a mobile document using optical character recognition (OCR).
-     * Returns null if not available.
-     */
-    get mobileDocumentOcr() {
-        if (this._mobileDocumentOcr === null && this.json.mobileDocumentOcrResult !== null) {
-            this._mobileDocumentOcr = MobileDocumentOCRResult
-                .fromJSON(this.json.mobileDocumentOcrResult);
-        }
-        return this._mobileDocumentOcr;
-    }
-    get verificationResult() {
-        if (this._verificationResult === null) {
-            this._verificationResult = VerificationResult.fromJSON(this.json.verificationResult);
-        }
-        return this._verificationResult;
-    }
-    get anonymizedFields() {
-        return this.json.anonymizedFields.map(field => field);
-    }
-    isAnonymized(field) {
-        return this.json.anonymizedFields.includes(field);
-    }
     static fromJSON(json) {
         const result = new CapturedId();
         result.json = json;
-        if (result.json.documentType) {
-            result._document = this.getDocument(result.issuingCountry, result.json.documentType, result.json.documentSubtype);
+        if (json.barcodeResult) {
+            result.commonCapturedFields = CommonCapturedIdFields.fromJSON(json.barcodeResult, result.commonCapturedFields);
+        }
+        if (json.mrzResult) {
+            result.commonCapturedFields = CommonCapturedIdFields.fromJSON(json.mrzResult, result.commonCapturedFields);
+        }
+        if (json.vizResult) {
+            result.commonCapturedFields = CommonCapturedIdFields.fromJSON(json.vizResult, result.commonCapturedFields);
+        }
+        if (result.commonCapturedFields && result.commonCapturedFields.documentType) {
+            result._document = this.getDocument(result.issuingCountry, result.commonCapturedFields.documentType, result.commonCapturedFields.documentSubtype);
         }
         result._images = IdImages.fromJSON(json.imageInfo);
         return result;
@@ -1732,130 +1598,15 @@ class CapturedId {
     }
 }
 
-/*
- * This file is part of the Scandit Data Capture SDK
- *
- * Copyright (C) 2025 Scandit AG. All rights reserved.
- */
-var IdFieldType;
-(function (IdFieldType) {
-    IdFieldType["AdditionalAddressInformation"] = "additionalAddressInformation";
-    IdFieldType["AdditionalNameInformation"] = "additionalNameInformation";
-    IdFieldType["Address"] = "address";
-    IdFieldType["Age"] = "age";
-    IdFieldType["BarcodeDictionary"] = "barcodeDictionary";
-    IdFieldType["BloodType"] = "bloodType";
-    IdFieldType["DateOfBirth"] = "dateOfBirth";
-    IdFieldType["DateOfExpiry"] = "dateOfExpiry";
-    IdFieldType["DateOfIssue"] = "dateOfIssue";
-    IdFieldType["DocumentAdditionalNumber"] = "documentAdditionalNumber";
-    IdFieldType["DocumentNumber"] = "documentNumber";
-    IdFieldType["Employer"] = "employer";
-    IdFieldType["FathersName"] = "fathersName";
-    IdFieldType["FirstName"] = "firstName";
-    IdFieldType["FullName"] = "fullName";
-    IdFieldType["IssuingAuthority"] = "issuingAuthority";
-    IdFieldType["LastName"] = "lastName";
-    IdFieldType["MaritalStatus"] = "maritalStatus";
-    IdFieldType["MothersName"] = "mothersName";
-    IdFieldType["MrzOptionalDataInLine1"] = "mrzOptionalDataInLine1";
-    IdFieldType["MrzOptionalDataInLine2"] = "mrzOptionalDataInLine2";
-    IdFieldType["Nationality"] = "nationality";
-    IdFieldType["PersonalIdNumber"] = "personalIdNumber";
-    IdFieldType["PlaceOfBirth"] = "placeOfBirth";
-    IdFieldType["Profession"] = "profession";
-    IdFieldType["Race"] = "race";
-    IdFieldType["Religion"] = "religion";
-    IdFieldType["ResidentialStatus"] = "residentialStatus";
-    IdFieldType["Sex"] = "sex";
-})(IdFieldType || (IdFieldType = {}));
-
-var MobileDocumentDataElement;
-(function (MobileDocumentDataElement) {
-    MobileDocumentDataElement["FamilyName"] = "familyName";
-    MobileDocumentDataElement["GivenName"] = "givenName";
-    MobileDocumentDataElement["BirthDate"] = "birthDate";
-    MobileDocumentDataElement["IssueDate"] = "issueDate";
-    MobileDocumentDataElement["ExpiryDate"] = "expiryDate";
-    MobileDocumentDataElement["IssuingCountry"] = "issuingCountry";
-    MobileDocumentDataElement["IssuingAuthority"] = "issuingAuthority";
-    MobileDocumentDataElement["DocumentNumber"] = "documentNumber";
-    MobileDocumentDataElement["Portrait"] = "portrait";
-    MobileDocumentDataElement["DrivingPrivileges"] = "drivingPrivileges";
-    MobileDocumentDataElement["AdministrativeNumber"] = "administrativeNumber";
-    MobileDocumentDataElement["SexIso"] = "sexIso";
-    MobileDocumentDataElement["Height"] = "height";
-    MobileDocumentDataElement["Weight"] = "weight";
-    MobileDocumentDataElement["EyeColour"] = "eyeColour";
-    MobileDocumentDataElement["HairColour"] = "hairColour";
-    MobileDocumentDataElement["BirthPlace"] = "birthPlace";
-    MobileDocumentDataElement["ResidentAddress"] = "residentAddress";
-    MobileDocumentDataElement["IssuingJurisdiction"] = "issuingJurisdiction";
-    MobileDocumentDataElement["Nationality"] = "nationality";
-    MobileDocumentDataElement["NameSuffix"] = "nameSuffix";
-    MobileDocumentDataElement["FamilyNameTruncation"] = "familyNameTruncation";
-    MobileDocumentDataElement["GivenNameTruncation"] = "givenNameTruncation";
-    MobileDocumentDataElement["AkaFamilyName"] = "akaFamilyName";
-    MobileDocumentDataElement["AkaGivenName"] = "akaGivenName";
-    MobileDocumentDataElement["AkaSuffix"] = "akaSuffix";
-    MobileDocumentDataElement["WeightRange"] = "weightRange";
-    MobileDocumentDataElement["RaceEthnicity"] = "raceEthnicity";
-    MobileDocumentDataElement["ResidentCounty"] = "residentCounty";
-    MobileDocumentDataElement["SexAamva"] = "sexAamva";
-    MobileDocumentDataElement["AamvaVersion"] = "aamvaVersion";
-})(MobileDocumentDataElement || (MobileDocumentDataElement = {}));
-
-class IdCaptureController extends BaseNewController {
-    constructor(idCapture = null) {
-        super('IdCaptureProxy');
-        this.idCapture = null;
-        this.idCapture = idCapture;
+class IdCaptureListenerController {
+    get _proxy() {
+        return FactoryMaker.getInstance('IdCaptureListenerProxy');
     }
-    reset() {
-        return this._proxy.$resetIdCaptureMode({ modeId: this.modeId });
-    }
-    setModeEnabledState(enabled) {
-        this._proxy.$setModeEnabledState({ modeId: this.modeId, enabled: enabled });
-    }
-    updateIdCaptureMode() {
-        if (this.idCapture == null) {
-            throw new Error('IdCaptureController is not initialized with an IdCapture instance');
-        }
-        return this._proxy.$updateIdCaptureMode({ modeJson: JSON.stringify(this.idCapture.toJSON()), modeId: this.modeId });
-    }
-    applyIdCaptureModeSettings(newSettings) {
-        return this._proxy.$applyIdCaptureModeSettings({
-            settingsJson: JSON.stringify(newSettings.toJSON()),
-            modeId: this.modeId,
-        });
-    }
-    updateFeedback(feedback) {
-        return this._proxy.$updateIdCaptureFeedback({
-            feedbackJson: JSON.stringify(feedback.toJSON()),
-            modeId: this.modeId,
-        });
-    }
-    get modeId() {
-        return this.idCapture.modeId;
-    }
-}
-
-var IdCaptureListenerEvents;
-(function (IdCaptureListenerEvents) {
-    IdCaptureListenerEvents["didCapture"] = "IdCaptureListener.didCaptureId";
-    IdCaptureListenerEvents["didReject"] = "IdCaptureListener.didRejectId";
-})(IdCaptureListenerEvents || (IdCaptureListenerEvents = {}));
-class IdCaptureListenerController extends BaseNewController {
     constructor(idCapture) {
-        super('IdCaptureListenerProxy');
         this.hasListeners = false;
-        this.handleDidCaptureWrapper = (ev) => __awaiter(this, void 0, void 0, function* () {
-            return this.handleDidCapture(ev);
-        });
-        this.handleDidRejectWrapper = (ev) => __awaiter(this, void 0, void 0, function* () {
-            return this.handleDidReject(ev);
-        });
+        this.eventEmitter = FactoryMaker.getInstance('EventEmitter');
         this.idCapture = idCapture;
+        this._proxy.isModeEnabled = () => idCapture.isEnabled;
         this.initialize();
     }
     initialize() {
@@ -1866,34 +1617,27 @@ class IdCaptureListenerController extends BaseNewController {
         });
     }
     subscribeListener() {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (this.hasListeners) {
-                return;
-            }
-            this._proxy.subscribeForEvents(Object.values(IdCaptureListenerEvents));
-            this._proxy.eventEmitter.on(IdCaptureListenerEvents.didCapture, this.handleDidCaptureWrapper);
-            this._proxy.eventEmitter.on(IdCaptureListenerEvents.didReject, this.handleDidRejectWrapper);
-            yield this._proxy.$addIdCaptureListener({ modeId: this.modeId });
-            this.hasListeners = true;
-        });
-    }
-    handleDidCapture(ev) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const event = EventDataParser.parse(ev.data);
+        if (this.hasListeners) {
+            return;
+        }
+        this._proxy.subscribeDidCaptureListener();
+        this._proxy.subscribeDidRejectListener();
+        this.eventEmitter.on(IdCaptureListenerEvents.didCapture, (data) => {
+            const event = EventDataParser.parse(data);
             if (event === null) {
                 console.error('IdCaptureListenerController didCapture payload is null');
                 return;
             }
             const capturedIdJson = JSON.parse(event.id);
-            this.enrichCapturedIdJson(capturedIdJson, event.imageInfo, event.frontReviewImage);
+            if (event.imageInfo) {
+                capturedIdJson.imageInfo = event.imageInfo;
+            }
             const captureId = CapturedId.fromJSON(capturedIdJson);
             this.notifyListenersOfDidCapture(captureId);
-            this._proxy.$finishDidCaptureCallback({ modeId: this.modeId, enabled: this.idCapture.isEnabled });
+            this._proxy.finishDidCaptureCallback(this.idCapture.isEnabled);
         });
-    }
-    handleDidReject(ev) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const event = EventDataParser.parse(ev.data);
+        this.eventEmitter.on(IdCaptureListenerEvents.didReject, (data) => {
+            const event = EventDataParser.parse(data);
             if (event === null) {
                 console.error('IdCaptureListenerController didReject payload is null');
                 return;
@@ -1901,24 +1645,24 @@ class IdCaptureListenerController extends BaseNewController {
             let rejectedId = null;
             if (event.id != null) {
                 const rejectedIdJson = JSON.parse(event.id);
-                this.enrichCapturedIdJson(rejectedIdJson, event.imageInfo, event.frontReviewImage);
+                if (event.imageInfo) {
+                    rejectedIdJson.imageInfo = event.imageInfo;
+                }
                 rejectedId = CapturedId.fromJSON(rejectedIdJson);
             }
             this.notifyListenersOfDidReject(rejectedId, event.rejectionReason);
-            this._proxy.$finishDidRejectCallback({ modeId: this.modeId, enabled: this.idCapture.isEnabled });
+            this._proxy.finishDidRejectCallback(this.idCapture.isEnabled);
         });
+        this.hasListeners = true;
     }
     unsubscribeListener() {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (!this.hasListeners) {
-                return;
-            }
-            yield this._proxy.$removeIdCaptureListener({ modeId: this.modeId });
-            this._proxy.unsubscribeFromEvents(Object.values(IdCaptureListenerEvents));
-            this._proxy.eventEmitter.off(IdCaptureListenerEvents.didCapture, this.handleDidCaptureWrapper);
-            this._proxy.eventEmitter.off(IdCaptureListenerEvents.didReject, this.handleDidRejectWrapper);
-            this.hasListeners = false;
-        });
+        if (!this.hasListeners) {
+            return;
+        }
+        this._proxy.unregisterListenerForEvents();
+        this.eventEmitter.removeAllListeners(IdCaptureListenerEvents.didCapture);
+        this.eventEmitter.removeAllListeners(IdCaptureListenerEvents.didReject);
+        this.hasListeners = false;
     }
     notifyListenersOfDidCapture(captureId) {
         const mode = this.idCapture;
@@ -1936,21 +1680,8 @@ class IdCaptureListenerController extends BaseNewController {
             }
         });
     }
-    enrichCapturedIdJson(capturedIdJson, imageInfo, frontReviewImage) {
-        var _a;
-        if (imageInfo) {
-            capturedIdJson.imageInfo = imageInfo;
-        }
-        if (frontReviewImage && ((_a = capturedIdJson.verificationResult) === null || _a === void 0 ? void 0 : _a.dataConsistencyResult)) {
-            capturedIdJson.verificationResult.dataConsistencyResult.frontReviewImage = frontReviewImage;
-        }
-    }
     dispose() {
         this.unsubscribeListener();
-        this._proxy.dispose();
-    }
-    get modeId() {
-        return this.idCapture.modeId;
     }
 }
 
@@ -1984,12 +1715,6 @@ class IdCaptureFeedback extends DefaultSerializeable {
     set idRejected(idRejected) {
         this._idRejected = idRejected;
         this.updateFeedback();
-    }
-    static get defaultSuccessSound() {
-        return IdCaptureFeedback.idDefaults.IdCapture.DefaultSuccessSound;
-    }
-    static get defaultFailureSound() {
-        return IdCaptureFeedback.idDefaults.IdCapture.DefaultFailureSound;
     }
     static fromJSON(json) {
         const idCaptured = Feedback.fromJSON(json.idCaptured);
@@ -2026,6 +1751,13 @@ __decorate([
 ], IdCaptureFeedback, "idDefaults", null);
 
 class IdCapture extends DefaultSerializeable {
+    get isEnabled() {
+        return this._isEnabled;
+    }
+    set isEnabled(isEnabled) {
+        this._isEnabled = isEnabled;
+        this.controller.setModeEnabledState(isEnabled);
+    }
     get context() {
         return this._context;
     }
@@ -2040,19 +1772,14 @@ class IdCapture extends DefaultSerializeable {
     static createRecommendedCameraSettings() {
         return new CameraSettings(IdCapture.idCaptureDefaults.IdCapture.RecommendedCameraSettings);
     }
-    get isEnabled() {
-        return this._isEnabled;
-    }
-    set isEnabled(isEnabled) {
-        this._isEnabled = isEnabled;
-        this.controller.setModeEnabledState(isEnabled);
-    }
-    get externalTransactionId() {
-        return this._externalTransactionId;
-    }
-    set externalTransactionId(externalTransactionId) {
-        this._externalTransactionId = externalTransactionId;
-        this.controller.updateIdCaptureMode();
+    /**
+     * @deprecated Use createRecommendedCameraSettings() instead to get a new instance that can be safely modified.
+     */
+    static get recommendedCameraSettings() {
+        if (IdCapture._recommendedCameraSettings === null) {
+            IdCapture._recommendedCameraSettings = IdCapture.createRecommendedCameraSettings();
+        }
+        return IdCapture._recommendedCameraSettings;
     }
     get _context() {
         return this.privateContext;
@@ -2071,17 +1798,29 @@ class IdCapture extends DefaultSerializeable {
     static get idCaptureDefaults() {
         return FactoryMaker.getInstance('IdDefaults');
     }
+    /**
+     * @deprecated Since 7.6. This factory will be removed in 8.0.
+     * Use the public constructor instead and configure the instance manually:
+     * ```ts
+     * const idCapture = new IdCapture(settings);
+     * context.addMode(idCapture);
+     * ```
+     */
+    static forContext(context, settings) {
+        const idCapture = new IdCapture(settings);
+        if (context) {
+            context.addMode(idCapture);
+        }
+        return idCapture;
+    }
     constructor(settings) {
         super();
         this.type = 'idCapture';
         this.modeId = Math.floor(Math.random() * 100000000);
-        this.parentId = null;
         this._isEnabled = true;
-        this._externalTransactionId = null;
         this._feedback = IdCaptureFeedback.defaultFeedback;
         this.privateContext = null;
         this.listeners = [];
-        this._hasListeners = false;
         this.listenerController = null;
         this.isInListenerCallback = false;
         this.settings = settings;
@@ -2093,45 +1832,33 @@ class IdCapture extends DefaultSerializeable {
         return this.controller.applyIdCaptureModeSettings(settings);
     }
     addListener(listener) {
-        return __awaiter(this, void 0, void 0, function* () {
-            var _a;
-            if (this.listeners.includes(listener)) {
-                return;
-            }
-            this.listeners.push(listener);
-            if (this.listeners.length === 0) {
-                yield ((_a = this.listenerController) === null || _a === void 0 ? void 0 : _a.subscribeListener());
-            }
-            this._hasListeners = this.listeners.length > 0;
-        });
+        var _a;
+        if (this.listeners.includes(listener)) {
+            return;
+        }
+        if (this.listeners.length === 0) {
+            (_a = this.listenerController) === null || _a === void 0 ? void 0 : _a.subscribeListener();
+        }
+        this.listeners.push(listener);
     }
     removeListener(listener) {
-        return __awaiter(this, void 0, void 0, function* () {
-            var _a;
-            if (!this.listeners.includes(listener)) {
-                return;
-            }
-            this.listeners.splice(this.listeners.indexOf(listener), 1);
-            if (this.listeners.length === 0) {
-                yield ((_a = this.listenerController) === null || _a === void 0 ? void 0 : _a.unsubscribeListener());
-            }
-            this._hasListeners = this.listeners.length > 0;
-        });
+        var _a;
+        if (!this.listeners.includes(listener)) {
+            return;
+        }
+        this.listeners.splice(this.listeners.indexOf(listener), 1);
+        if (this.listeners.length === 0) {
+            (_a = this.listenerController) === null || _a === void 0 ? void 0 : _a.unsubscribeListener();
+        }
     }
     reset() {
         return this.controller.reset();
     }
 }
+IdCapture._recommendedCameraSettings = null;
 __decorate([
-    nameForSerialization('parentId'),
-    ignoreFromSerializationIfNull
-], IdCapture.prototype, "parentId", void 0);
-__decorate([
-    nameForSerialization('enabled')
+    ignoreFromSerialization
 ], IdCapture.prototype, "_isEnabled", void 0);
-__decorate([
-    nameForSerialization('externalTransactionId')
-], IdCapture.prototype, "_externalTransactionId", void 0);
 __decorate([
     nameForSerialization('feedback')
 ], IdCapture.prototype, "_feedback", void 0);
@@ -2141,9 +1868,6 @@ __decorate([
 __decorate([
     ignoreFromSerialization
 ], IdCapture.prototype, "listeners", void 0);
-__decorate([
-    nameForSerialization('hasListeners')
-], IdCapture.prototype, "_hasListeners", void 0);
 __decorate([
     ignoreFromSerialization
 ], IdCapture.prototype, "controller", void 0);
@@ -2187,11 +1911,27 @@ class IdCaptureOverlay extends DefaultSerializeable {
     static get idCaptureDefaults() {
         return FactoryMaker.getInstance('IdDefaults');
     }
-    static get defaultIdLayoutStyle() {
-        return IdCaptureOverlay.idCaptureDefaults.IdCapture.IdCaptureOverlayDefaults.defaultIdLayoutStyle;
+    /**
+     * @deprecated Since 7.6. These factories will be removed in 8.0.
+     * Use the public constructor instead and add the overlay to the view manually:
+     * const overlay = new IdCaptureOverlay(idCapture);
+     * view.addOverlay(overlay);
+     */
+    static withIdCapture(idCapture) {
+        return IdCaptureOverlay.withIdCaptureForView(idCapture, null);
     }
-    static get defaultIdLayoutLineStyle() {
-        return IdCaptureOverlay.idCaptureDefaults.IdCapture.IdCaptureOverlayDefaults.defaultIdLayoutLineStyle;
+    /**
+     * @deprecated Since 7.6. These factories will be removed in 8.0.
+     * Use the public constructor instead and add the overlay to the view manually:
+     * const overlay = new IdCaptureOverlay(idCapture);
+     * view.addOverlay(overlay);
+     */
+    static withIdCaptureForView(idCapture, view) {
+        const overlay = new IdCaptureOverlay(idCapture);
+        if (view) {
+            view.addOverlay(overlay);
+        }
+        return overlay;
     }
     constructor(mode) {
         super();
@@ -2324,34 +2064,6 @@ __decorate([
 __decorate([
     ignoreFromSerialization
 ], IdCaptureOverlay, "idCaptureDefaults", null);
-__decorate([
-    ignoreFromSerialization
-], IdCaptureOverlay, "defaultIdLayoutStyle", null);
-__decorate([
-    ignoreFromSerialization
-], IdCaptureOverlay, "defaultIdLayoutLineStyle", null);
-
-class IdCaptureScanner extends DefaultSerializeable {
-    constructor(physicalDocumentScanner, mobileDocumentScanner) {
-        super();
-        this._physicalDocumentScanner = physicalDocumentScanner !== null && physicalDocumentScanner !== void 0 ? physicalDocumentScanner : null;
-        this._mobileDocumentScanner = mobileDocumentScanner !== null && mobileDocumentScanner !== void 0 ? mobileDocumentScanner : null;
-    }
-    get physicalDocument() {
-        return this._physicalDocumentScanner;
-    }
-    get mobileDocument() {
-        return this._mobileDocumentScanner;
-    }
-}
-__decorate([
-    nameForSerialization('physicalDocument'),
-    ignoreFromSerializationIfNull
-], IdCaptureScanner.prototype, "_physicalDocumentScanner", void 0);
-__decorate([
-    nameForSerialization('mobileDocument'),
-    ignoreFromSerializationIfNull
-], IdCaptureScanner.prototype, "_mobileDocumentScanner", void 0);
 
 class SingleSideScanner extends DefaultSerializeable {
     constructor(barcode, machineReadableZone, visualInspectionZone) {
@@ -2416,45 +2128,17 @@ __decorate([
     ignoreFromSerialization
 ], FullDocumentScanner.prototype, "_visualInspectionZone", void 0);
 
-class MobileDocumentScanner extends DefaultSerializeable {
-    constructor(iso180135, ocr, elementsToRetain) {
-        super();
-        this._iso180135 = iso180135;
-        this._ocr = ocr;
-        this._elementsToRetain = elementsToRetain !== null && elementsToRetain !== void 0 ? elementsToRetain : new Set();
-    }
-    get iso180135() {
-        return this._iso180135;
-    }
-    get ocr() {
-        return this._ocr;
-    }
-    get elementsToRetain() {
-        return this._elementsToRetain;
-    }
-}
-__decorate([
-    nameForSerialization('iso18013_5')
-], MobileDocumentScanner.prototype, "_iso180135", void 0);
-__decorate([
-    nameForSerialization('ocr')
-], MobileDocumentScanner.prototype, "_ocr", void 0);
-__decorate([
-    nameForSerialization('elements_to_retain')
-], MobileDocumentScanner.prototype, "_elementsToRetain", void 0);
-
 class IdCaptureSettings extends DefaultSerializeable {
     constructor() {
         super();
         this.properties = {};
         this.imageToResult = {};
-        this.anonymizationMap = {};
         this.anonymizationMode = IdCaptureSettings.idCaptureDefaults.IdCapture.IdCaptureSettings.anonymizationMode;
         this.rejectVoidedIds = IdCaptureSettings.idCaptureDefaults.IdCapture.IdCaptureSettings.rejectVoidedIds;
         this.decodeBackOfEuropeanDrivingLicense = IdCaptureSettings.idCaptureDefaults.IdCapture.IdCaptureSettings.decodeBackOfEuropeanDrivingLicense;
         this.acceptedDocuments = [];
         this.rejectedDocuments = [];
-        this.scanner = new IdCaptureScanner();
+        this.scannerType = new SingleSideScanner(false, false, false);
         this.rejectExpiredIds = IdCaptureSettings.idCaptureDefaults.IdCapture.IdCaptureSettings.rejectExpiredIds;
         this.rejectIdsExpiringIn = IdCaptureSettings.idCaptureDefaults.IdCapture.IdCaptureSettings.rejectIdsExpiringIn;
         this.rejectNotRealIdCompliant = IdCaptureSettings.idCaptureDefaults.IdCapture.IdCaptureSettings.rejectNotRealIdCompliant;
@@ -2477,72 +2161,54 @@ class IdCaptureSettings extends DefaultSerializeable {
     getShouldPassImageTypeToResult(type) {
         return this.imageToResult[type] || false;
     }
-    addAnonymizedField(document, fieldType) {
-        var _a;
-        const key = JSON.stringify(document);
-        this.anonymizationMap[key] = [...new Set([...((_a = this.anonymizationMap[key]) !== null && _a !== void 0 ? _a : []), fieldType.toString()])];
-    }
 }
-__decorate([
-    nameForSerialization('scannerType')
-], IdCaptureSettings.prototype, "scanner", void 0);
 __decorate([
     ignoreFromSerialization
 ], IdCaptureSettings, "idCaptureDefaults", null);
 
-// Core ID Types
-
-var IdExports = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    AamvaBarcodeVerificationResult: AamvaBarcodeVerificationResult,
-    get AamvaBarcodeVerificationStatus () { return AamvaBarcodeVerificationStatus; },
-    BarcodeResult: BarcodeResult,
-    CapturedId: CapturedId,
-    get CapturedSides () { return CapturedSides; },
-    get DataConsistencyCheck () { return DataConsistencyCheck; },
-    DataConsistencyResult: DataConsistencyResult,
-    DateResult: DateResult,
-    DriverLicense: DriverLicense,
-    DrivingLicenseCategory: DrivingLicenseCategory,
-    DrivingLicenseDetails: DrivingLicenseDetails,
-    Duration: Duration,
-    FullDocumentScanner: FullDocumentScanner,
-    HealthInsuranceCard: HealthInsuranceCard,
-    get IdAnonymizationMode () { return IdAnonymizationMode; },
-    IdCapture: IdCapture,
-    get IdCaptureDocumentType () { return IdCaptureDocumentType; },
-    IdCaptureFeedback: IdCaptureFeedback,
-    IdCaptureOverlay: IdCaptureOverlay,
-    get IdCaptureRegion () { return IdCaptureRegion; },
-    IdCaptureScanner: IdCaptureScanner,
-    IdCaptureSettings: IdCaptureSettings,
-    IdCard: IdCard,
-    get IdFieldType () { return IdFieldType; },
-    get IdImageType () { return IdImageType; },
-    IdImages: IdImages,
-    get IdLayoutLineStyle () { return IdLayoutLineStyle; },
-    get IdLayoutStyle () { return IdLayoutStyle; },
-    get IdSide () { return IdSide; },
-    MRZResult: MRZResult,
-    get MobileDocumentDataElement () { return MobileDocumentDataElement; },
-    MobileDocumentOCRResult: MobileDocumentOCRResult,
-    MobileDocumentResult: MobileDocumentResult,
-    MobileDocumentScanner: MobileDocumentScanner,
-    Passport: Passport,
-    ProfessionalDrivingPermit: ProfessionalDrivingPermit,
-    RegionSpecific: RegionSpecific,
-    get RegionSpecificSubtype () { return RegionSpecificSubtype; },
-    get RejectionReason () { return RejectionReason; },
-    ResidencePermit: ResidencePermit,
-    get Sex () { return Sex; },
-    SingleSideScanner: SingleSideScanner,
-    get TextHintPosition () { return TextHintPosition; },
-    get UsRealIdStatus () { return UsRealIdStatus; },
-    VIZResult: VIZResult,
-    VehicleRestriction: VehicleRestriction,
-    VerificationResult: VerificationResult,
-    VisaIcao: VisaIcao
-});
+/**
+ * @deprecated Replaced by IdCaptureSettings.rejectForgedAamvaBarcodes
+ */
+class AamvaBarcodeVerifier {
+    constructor() {
+        this.controller = new IdCaptureController(null);
+    }
+    static create(context) {
+        const verifier = new AamvaBarcodeVerifier();
+        return new Promise((resolve, reject) => {
+            verifier
+                .controller
+                .createContextForBarcodeVerification(context)
+                .then(() => {
+                verifier.context = context;
+                resolve(verifier);
+            }, reject);
+        });
+    }
+    verify(capturedId) {
+        // Necessary for not exposing internal API on CapturedId, while only passing the private "json" property
+        // to native iOS and Android.
+        const capturedIdAsString = JSON.stringify(capturedId);
+        const capturedIdJsonData = JSON.parse(capturedIdAsString).json;
+        return new Promise((resolve, reject) => {
+            this.controller
+                .verifyCapturedIdAsync(JSON.stringify(capturedIdJsonData))
+                .then((json) => {
+                if (!json) {
+                    resolve(AamvaBarcodeVerificationResult
+                        .fromJSON(JSON.parse('{}')));
+                }
+                else {
+                    resolve(AamvaBarcodeVerificationResult
+                        .fromJSON(JSON.parse(json)));
+                }
+            }, reject);
+        });
+    }
+}
+__decorate([
+    ignoreFromSerialization
+], AamvaBarcodeVerifier.prototype, "controller", void 0);
 
 const pluginName = 'ScanditIdNative';
 // tslint:disable-next-line:variable-name
@@ -2555,7 +2221,9 @@ var CapacitorFunction;
 (function (CapacitorFunction) {
     CapacitorFunction["GetDefaults"] = "getDefaults";
     CapacitorFunction["ResetIdCapture"] = "resetIdCapture";
+    CapacitorFunction["VerifyCapturedIdAsync"] = "verifyCapturedIdAsync";
     CapacitorFunction["FinishCallback"] = "finishCallback";
+    CapacitorFunction["CreateContextForBarcodeVerification"] = "createContextForBarcodeVerification";
     CapacitorFunction["SetModeEnabledState"] = "setModeEnabledState";
     CapacitorFunction["UpdateIdCaptureOverlay"] = "updateIdCaptureOverlay";
     CapacitorFunction["UpdateIdCaptureMode"] = "updateIdCaptureMode";
@@ -2574,13 +2242,80 @@ const getDefaults = async () => {
 };
 const capacitorIdNativeCaller = new CapacitorNativeCaller(Capacitor.pluginName);
 
+class NativeIdCaptureListenerProxy {
+    constructor() {
+        this.eventEmitter = FactoryMaker.getInstance('EventEmitter');
+    }
+    async subscribeDidCaptureListener() {
+        this.didCaptureEventListener = await window.Capacitor.Plugins[Capacitor.pluginName]
+            .addListener(IdCaptureListenerEvents.didCapture, this.notifyListeners.bind(this));
+    }
+    async subscribeDidRejectListener() {
+        this.didRejectListener = await window.Capacitor.Plugins[Capacitor.pluginName]
+            .addListener(IdCaptureListenerEvents.didReject, this.notifyListeners.bind(this));
+    }
+    finishDidCaptureCallback(isEnabled) {
+        window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.FinishCallback]({ 'result': { 'enabled': isEnabled, 'finishCallbackID': IdCaptureListenerEvents.didCapture } });
+    }
+    finishDidRejectCallback(isEnabled) {
+        window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.FinishCallback]({ 'result': { 'enabled': isEnabled, 'finishCallbackID': IdCaptureListenerEvents.didReject } });
+    }
+    unregisterListenerForEvents() {
+        this.didCaptureEventListener.remove();
+        this.didRejectListener.remove();
+    }
+    notifyListeners(event) {
+        const done = () => {
+            return { enabled: this.isModeEnabled() };
+        };
+        if (!event) {
+            // The event could be undefined/null in case the plugin result did not pass a "message",
+            // which could happen e.g. in case of "ok" results, which could signal e.g. successful
+            // listener subscriptions.
+            return done();
+        }
+        this.eventEmitter.emit(event.name, event.data);
+        return done();
+    }
+}
+
+class NativeIdCaptureProxy {
+    createContextForBarcodeVerification(contextJSON) {
+        return window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.CreateContextForBarcodeVerification]({
+            capturedId: contextJSON,
+        });
+    }
+    resetMode() {
+        return window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.ResetIdCapture]();
+    }
+    verifyCapturedIdAsync(capturedId) {
+        return window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.VerifyCapturedIdAsync]({
+            capturedId: capturedId,
+        });
+    }
+    updateIdCaptureMode(modeJson) {
+        return window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.UpdateIdCaptureMode]({
+            modeJson: modeJson
+        });
+    }
+    applyIdCaptureModeSettings(newSettingsJson) {
+        return window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.ApplyIdCaptureModeSettings]({
+            newSettingsJson: newSettingsJson
+        });
+    }
+    setModeEnabledState(enabled) {
+        window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.SetModeEnabledState]({ 'enabled': enabled });
+    }
+    updateFeedback(feedbackJson) {
+        return window.Capacitor.Plugins[Capacitor.pluginName][CapacitorFunction.UpdateIdCaptureFeedback]({
+            feedbackJson: feedbackJson
+        });
+    }
+}
+
 function initIdProxy() {
-    FactoryMaker.bindLazyInstance('IdCaptureListenerProxy', () => {
-        return createNativeProxy(capacitorIdNativeCaller);
-    });
-    FactoryMaker.bindLazyInstance('IdCaptureProxy', () => {
-        return createNativeProxy(capacitorIdNativeCaller);
-    });
+    FactoryMaker.bindInstance('IdCaptureListenerProxy', new NativeIdCaptureListenerProxy());
+    FactoryMaker.bindInstance('IdCaptureProxy', new NativeIdCaptureProxy());
     FactoryMaker.bindLazyInstance('IdCaptureOverlayProxy', () => {
         return createNativeProxy(capacitorIdNativeCaller);
     });
@@ -2591,7 +2326,46 @@ class ScanditIdPluginImplementation {
         CapacitorCore.defaults = coreDefaults;
         await getDefaults();
         initIdProxy();
-        const api = Object.assign({}, IdExports);
+        const api = {
+            IdCapture,
+            IdCaptureFeedback,
+            IdCaptureOverlay,
+            IdCaptureSettings,
+            DocumentType,
+            IdImageType,
+            CapturedSides,
+            IdLayoutStyle,
+            IdLayoutLineStyle,
+            AamvaBarcodeVerifier,
+            AamvaBarcodeVerificationStatus,
+            CapturedId,
+            DateResult,
+            MRZResult,
+            VIZResult,
+            IdAnonymizationMode,
+            ProfessionalDrivingPermit,
+            VehicleRestriction,
+            AamvaBarcodeVerificationResult,
+            TextHintPosition,
+            RejectionReason,
+            IdCaptureDocumentType,
+            DriverLicense,
+            HealthInsuranceCard,
+            IdCard,
+            Passport,
+            RegionSpecific,
+            ResidencePermit,
+            VisaIcao,
+            IdCaptureRegion,
+            SingleSideScanner,
+            FullDocumentScanner,
+            BarcodeResult,
+            RegionSpecificSubtype,
+            IdImages,
+            IdSide,
+            UsRealIdStatus,
+            Duration
+        };
         return api;
     }
 }
@@ -2603,4 +2377,4 @@ registerPlugin('ScanditIdPlugin', {
 // tslint:disable-next-line:variable-name
 const ScanditIdPlugin = new ScanditIdPluginImplementation();
 
-export { AamvaBarcodeVerificationResult, AamvaBarcodeVerificationStatus, BarcodeResult, CapturedId, CapturedSides, DataConsistencyCheck, DataConsistencyResult, DateResult, DriverLicense, DrivingLicenseCategory, DrivingLicenseDetails, Duration, FullDocumentScanner, HealthInsuranceCard, IdAnonymizationMode, IdCapture, IdCaptureDocumentType, IdCaptureFeedback, IdCaptureOverlay, IdCaptureRegion, IdCaptureScanner, IdCaptureSettings, IdCard, IdFieldType, IdImageType, IdImages, IdLayoutLineStyle, IdLayoutStyle, IdSide, MRZResult, MobileDocumentDataElement, MobileDocumentOCRResult, MobileDocumentResult, MobileDocumentScanner, Passport, ProfessionalDrivingPermit, RegionSpecific, RegionSpecificSubtype, RejectionReason, ResidencePermit, ScanditIdPlugin, ScanditIdPluginImplementation, Sex, SingleSideScanner, TextHintPosition, UsRealIdStatus, VIZResult, VehicleRestriction, VerificationResult, VisaIcao };
+export { AamvaBarcodeVerificationResult, AamvaBarcodeVerificationStatus, AamvaBarcodeVerifier, BarcodeResult, CapturedId, CapturedSides, DateResult, DriverLicense, Duration, FullDocumentScanner, HealthInsuranceCard, IdAnonymizationMode, IdCapture, IdCaptureDocumentType, IdCaptureFeedback, IdCaptureOverlay, IdCaptureRegion, IdCaptureSettings, IdCard, IdImageType, IdImages, IdLayoutLineStyle, IdLayoutStyle, IdSide, MRZResult, Passport, ProfessionalDrivingPermit, RegionSpecific, RegionSpecificSubtype, RejectionReason, ResidencePermit, ScanditIdPlugin, ScanditIdPluginImplementation, SingleSideScanner, TextHintPosition, VIZResult, VehicleRestriction, VisaIcao };
