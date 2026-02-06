@@ -1,6 +1,6 @@
 {
   "name": "scandit-capacitor-datacapture-id",
-  "version": "8.1.1",
+  "version": "7.4.5",
   "description": "Scandit Data Capture SDK for Capacitor",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -10,9 +10,8 @@
     "android/src/main/",
     "android/build.gradle",
     "dist/",
-    "ios/",
-    "ScanditCapacitorDatacaptureId.podspec",
-    "Package.swift"
+    "ios/Plugin/",
+    "ScanditCapacitorDatacaptureId.podspec"
   ],
   "author": "",
   "license": "Apache-2.0",
@@ -41,9 +40,9 @@
     "@babel/plugin-proposal-decorators": "^7.24.0",
     "@babel/preset-env": "^7.24.0",
     "@babel/preset-typescript": "^7.23.3",
-    "@capacitor/android": ">=5.0.0 <8.0.0",
-    "@capacitor/core": ">=5.0.0 <8.0.0",
-    "@capacitor/ios": ">=5.0.0 <8.0.0",
+    "@capacitor/android": "^5.0.0",
+    "@capacitor/core": "^5.0.0",
+    "@capacitor/ios": "^5.0.0",
     "@capacitor/docgen": "^0.2.1",
     "@jest/globals": "^29.7.0",
     "@types/node": "18.15.3",
@@ -63,9 +62,9 @@
     "@typescript-eslint/eslint-plugin": "5.57.1"
   },
   "dependencies": {
-    "scandit-capacitor-datacapture-core": "8.1.1",
-    "scandit-datacapture-frameworks-core": "8.1.1",
-    "scandit-datacapture-frameworks-id": "8.1.1"
+    "scandit-capacitor-datacapture-core": "7.4.5",
+    "scandit-datacapture-frameworks-core": "7.4.5",
+    "scandit-datacapture-frameworks-id": "7.4.5"
   },
   "capacitor": {
     "ios": {
