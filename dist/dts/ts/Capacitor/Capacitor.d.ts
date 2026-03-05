@@ -10,18 +10,4 @@ export interface CapacitorWindow extends Window {
     Scandit: any;
     Capacitor: any;
 }
-export declare enum CapacitorFunction {
-    GetDefaults = "getDefaults",
-    ResetIdCapture = "resetIdCapture",
-    VerifyCapturedId = "verifyCapturedId",
-    VerifyCapturedIdAsync = "verifyCapturedIdAsync",
-    VerifyVizMrz = "verifyVizMrz",
-    FinishCallback = "finishCallback",
-    CreateContextForBarcodeVerification = "createContextForBarcodeVerification",
-    SetModeEnabledState = "setModeEnabledState",
-    UpdateIdCaptureOverlay = "updateIdCaptureOverlay",
-    UpdateIdCaptureMode = "updateIdCaptureMode",
-    ApplyIdCaptureModeSettings = "applyIdCaptureModeSettings",
-    UpdateIdCaptureFeedback = "updateIdCaptureFeedback"
-}
 export declare const getDefaults: () => Promise<void>;
