@@ -72,14 +72,28 @@ public class ScanditIdNative: CAPPlugin {
             return
         }
         let enabled = result.enabled ?? false
-        if result.isForListenerEvent(.didCaptureInIdCapture) {
+        if result.isForListenerEvent(.didLocalizeInIdCapture) {
+            idModule.finishDidLocalizeId(enabled: enabled)
+        } else if result.isForListenerEvent(.didCaptureInIdCapture) {
             idModule.finishDidCaptureId(enabled: enabled)
         } else if result.isForListenerEvent(.didRejectInIdCapture) {
             idModule.finishDidRejectId(enabled: enabled)
+        } else if result.isForListenerEvent(.didTimoutInIdCapture) {
+            idModule.finishTimeout(enabled: enabled)
         } else {
             call.reject("Invalid 'finishCallbackId' for IdCapture: \(result.finishCallbackID.rawValue)")
         }
         call.resolve()
+    }
+
+    @objc(verifyCapturedId:)
+    func verifyCapturedId(_ call: CAPPluginCall) {
+        guard let jsonString = call.options["capturedId"] as! String? else {
+            call.reject(CommandError.invalidJSON.toJSONString())
+            return
+        }
+        idModule.verifyCapturedIdAamvaViz(jsonString: jsonString,
+                                          result: CapacitorResult(call))
     }
 
     @objc(verifyCapturedIdAsync:)
@@ -89,6 +103,16 @@ public class ScanditIdNative: CAPPlugin {
             return
         }
         idModule.verifyCapturedIdWithCloud(jsonString: jsonString,
+                                          result: CapacitorResult(call))
+    }
+
+    @objc(verifyVizMrz:)
+    func verifyVizMrz(_ call: CAPPluginCall) {
+        guard let jsonString = call.options["capturedId"] as! String? else {
+            call.reject(CommandError.invalidJSON.toJSONString())
+            return
+        }
+        idModule.verifyCaptureIdMrzViz(jsonString: jsonString,
                                           result: CapacitorResult(call))
     }
 
