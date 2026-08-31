@@ -933,8 +933,10 @@ class BarcodeResult {
     get isRealId() {
         return this.json.isRealId;
     }
+    // Serialized natively as "dictionary"; exposed publicly as barcodeDataElements.
     get barcodeDataElements() {
-        return this.json.barcodeDataElements;
+        var _a;
+        return (_a = this.json.dictionary) !== null && _a !== void 0 ? _a : {};
     }
     // Common Fields
     get firstName() {
