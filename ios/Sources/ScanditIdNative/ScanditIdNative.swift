@@ -7,8 +7,24 @@
 import Capacitor
 import Foundation
 import ScanditCapacitorDatacaptureCore
-import ScanditFrameworksCore
 import ScanditFrameworksId
+
+struct IdCaptureCallbackResult: BlockingListenerCallbackResult {
+    struct ResultJSON: Decodable {
+        let enabled: Bool?
+    }
+
+    let finishCallbackID: ListenerEvent.Name
+    let result: ResultJSON?
+
+    var enabled: Bool? {
+        guard let result = result else {
+            return nil
+        }
+
+        return result.enabled
+    }
+}
 
 @objc(ScanditIdNative)
 public class ScanditIdNative: CAPPlugin, CAPBridgedPlugin {
@@ -16,7 +32,16 @@ public class ScanditIdNative: CAPPlugin, CAPBridgedPlugin {
     public let jsName = "ScanditIdNative"
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "getDefaults", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "executeId", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "resetIdCaptureMode", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setModeEnabledState", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "addIdCaptureListener", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "removeIdCaptureListener", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "finishDidCaptureCallback", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "finishDidRejectCallback", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "updateIdCaptureOverlay", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "updateIdCaptureMode", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "applyIdCaptureModeSettings", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "updateFeedback", returnType: CAPPluginReturnPromise),
     ]
     var idModule: IdCaptureModule!
 
@@ -30,29 +55,120 @@ public class ScanditIdNative: CAPPlugin, CAPBridgedPlugin {
         idModule.didStop()
     }
 
+    // MARK: Defaults
+
     @objc(getDefaults:)
     func getDefaults(_ call: CAPPluginCall) {
-        call.resolve(idModule.getDefaults() as PluginCallResultData)
+        call.resolve(idModule.defaults.toEncodable() as PluginCallResultData)
     }
 
-    @objc(executeId:)
-    func executeId(_ call: CAPPluginCall) {
-        let coreModuleName = String(describing: CoreModule.self)
-        guard let coreModule = DefaultServiceLocator.shared.resolve(clazzName: coreModuleName) as? CoreModule else {
-            call.reject("Unable to retrieve the CoreModule from the locator.")
+    // MARK: Reset
+
+    @objc(resetIdCaptureMode:)
+    func resetIdCaptureMode(_ call: CAPPluginCall) {
+        guard let modeId = call.getInt("modeId") else {
+            call.reject(CommandError.noModeIdParameter.toJSONString())
             return
         }
+        idModule.resetMode(modeId: modeId)
+        call.resolve()
+    }
 
-        let result = CapacitorResult(call)
-        let handled = coreModule.execute(
-            CapacitorMethodCall(call),
-            result: result,
-            module: idModule
-        )
-
-        if !handled {
-            let methodName = call.getString("methodName") ?? "unknown"
-            call.reject("Unknown Core method: \(methodName)")
+    @objc(addIdCaptureListener:)
+    func addIdCaptureListener(_ call: CAPPluginCall) {
+        guard let modeId = call.getInt("modeId") else {
+            call.reject(CommandError.noModeIdParameter.toJSONString())
+            return
         }
+        idModule.addListener(modeId: modeId)
+        call.resolve()
+    }
+
+    @objc(removeIdCaptureListener:)
+    func removeIdCaptureListener(_ call: CAPPluginCall) {
+        guard let modeId = call.getInt("modeId") else {
+            call.reject(CommandError.noModeIdParameter.toJSONString())
+            return
+        }
+        idModule.removeListener(modeId: modeId)
+        call.resolve()
+    }
+
+    @objc(finishDidCaptureCallback:)
+    func finishDidCaptureCallback(_ call: CAPPluginCall) {
+        guard let modeId = call.getInt("modeId") else {
+            call.reject(CommandError.noModeIdParameter.toJSONString())
+            return
+        }
+        idModule.finishDidCaptureId(modeId: modeId, enabled: call.getBool("enabled", false))
+        call.resolve()
+    }
+
+    @objc(finishDidRejectCallback:)
+    func finishDidRejectCallback(_ call: CAPPluginCall) {
+        guard let modeId = call.getInt("modeId") else {
+            call.reject(CommandError.noModeIdParameter.toJSONString())
+            return
+        }
+        idModule.finishDidRejectId(modeId: modeId, enabled: call.getBool("enabled", false))
+        call.resolve()
+    }
+
+    @objc(setModeEnabledState:)
+    func setModeEnabledState(_ call: CAPPluginCall) {
+        guard let modeId = call.getInt("modeId") else {
+            call.reject(CommandError.noModeIdParameter.toJSONString())
+            return
+        }
+        idModule.setModeEnabled(modeId: modeId, enabled: call.getBool("enabled", false))
+        call.resolve()
+    }
+
+    @objc(updateIdCaptureOverlay:)
+    func updateIdCaptureOverlay(_ call: CAPPluginCall) {
+        guard let overlayJson = call.getString("overlayJson") else {
+            call.reject(CommandError.invalidJSON.toJSONString())
+            return
+        }
+        idModule.updateOverlay(overlayJson: overlayJson, result: CapacitorResult(call))
+    }
+
+    @objc(updateIdCaptureMode:)
+    func updateIdCaptureMode(_ call: CAPPluginCall) {
+        guard let modeId = call.getInt("modeId") else {
+            call.reject(CommandError.noModeIdParameter.toJSONString())
+            return
+        }
+        guard let modeJson = call.getString("modeJson") else {
+            call.reject(CommandError.invalidJSON.toJSONString())
+            return
+        }
+        idModule.updateModeFromJson(modeId: modeId, modeJson: modeJson, result: CapacitorResult(call))
+    }
+
+    @objc(applyIdCaptureModeSettings:)
+    func applyIdCaptureModeSettings(_ call: CAPPluginCall) {
+        guard let modeId = call.getInt("modeId") else {
+            call.reject(CommandError.noModeIdParameter.toJSONString())
+            return
+        }
+        guard let modeSettingsJson = call.getString("settingsJson") else {
+            call.reject(CommandError.invalidJSON.toJSONString())
+            return
+        }
+        idModule.applyModeSettings(modeId: modeId, modeSettingsJson: modeSettingsJson, result: CapacitorResult(call))
+    }
+
+    @objc(updateFeedback:)
+    func updateFeedback(_ call: CAPPluginCall) {
+        guard let modeId = call.getInt("modeId") else {
+            call.reject(CommandError.noModeIdParameter.toJSONString())
+            return
+        }
+        guard let feedbackJson = call.getString("feedbackJson") else {
+            call.reject(CommandError.invalidJSON.toJSONString())
+            return
+        }
+        idModule.updateFeedback(modeId: modeId, feedbackJson: feedbackJson, result: CapacitorResult(call))
     }
 }
