@@ -585,7 +585,6 @@ function parseIdDefaults(jsonDefaults) {
                 rejectForgedAamvaBarcodes: jsonDefaults.IdCaptureSettings.rejectForgedAamvaBarcodes,
                 rejectInconsistentData: jsonDefaults.IdCaptureSettings.rejectInconsistentData,
                 rejectHolderBelowAge: jsonDefaults.IdCaptureSettings.rejectHolderBelowAge,
-                notifyOnSideCapture: jsonDefaults.IdCaptureSettings.notifyOnSideCapture,
             },
         },
     };
@@ -934,10 +933,8 @@ class BarcodeResult {
     get isRealId() {
         return this.json.isRealId;
     }
-    // Serialized natively as "dictionary"; exposed publicly as barcodeDataElements.
     get barcodeDataElements() {
-        var _a;
-        return (_a = this.json.dictionary) !== null && _a !== void 0 ? _a : {};
+        return this.json.barcodeDataElements;
     }
     // Common Fields
     get firstName() {
@@ -1761,9 +1758,6 @@ class CapturedId {
     }
     get isExpired() {
         return this.json.isExpired;
-    }
-    get isCapturingComplete() {
-        return this.json.isCapturingComplete;
     }
     get isCitizenPassport() {
         return this.json.isCitizenPassport;
@@ -2827,7 +2821,6 @@ class IdCaptureSettings extends DefaultSerializeable {
         this.rejectForgedAamvaBarcodes = IdCaptureSettings.idCaptureDefaults.IdCapture.IdCaptureSettings.rejectForgedAamvaBarcodes;
         this.rejectInconsistentData = IdCaptureSettings.idCaptureDefaults.IdCapture.IdCaptureSettings.rejectInconsistentData;
         this.rejectHolderBelowAge = IdCaptureSettings.idCaptureDefaults.IdCapture.IdCaptureSettings.rejectHolderBelowAge;
-        this.notifyOnSideCapture = IdCaptureSettings.idCaptureDefaults.IdCapture.IdCaptureSettings.notifyOnSideCapture;
         this.properties = {};
         this.imageToResult = {};
         this.anonymizationMap = {};
