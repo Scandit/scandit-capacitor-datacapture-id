@@ -18,6 +18,8 @@ import com.scandit.capacitor.datacapture.core.utils.CapacitorMethodCall;
 import com.scandit.capacitor.datacapture.core.utils.CapacitorResult;
 import com.scandit.datacapture.frameworks.core.CoreModule;
 import com.scandit.datacapture.frameworks.core.events.Emitter;
+import com.scandit.datacapture.frameworks.core.listeners.registry.ListenerRegistry;
+import com.scandit.datacapture.frameworks.core.listeners.registry.RegistryEmitter;
 import com.scandit.datacapture.frameworks.core.locator.DefaultServiceLocator;
 import com.scandit.datacapture.frameworks.id.IdCaptureModule;
 import java.util.Map;
@@ -34,7 +36,8 @@ public class ScanditIdNative extends Plugin implements Emitter {
   private boolean lastIdCaptureEnabledState = false;
 
   public ScanditIdNative() {
-    this.idCaptureModule = IdCaptureModule.create(this);
+    this.idCaptureModule =
+        IdCaptureModule.create(new RegistryEmitter(this, ListenerRegistry.getInstance()));
     this.serviceLocator = DefaultServiceLocator.getInstance();
   }
 
@@ -93,12 +96,13 @@ public class ScanditIdNative extends Plugin implements Emitter {
   }
 
   @PluginMethod
-  public void getDefaults(PluginCall call) {
+  public void getDynamicDefaults(PluginCall call) {
     try {
-      JSObject defaults = JSObject.fromJSONObject(new JSONObject(idCaptureModule.getDefaults()));
+      JSObject defaults =
+          JSObject.fromJSONObject(new JSONObject(idCaptureModule.getDynamicDefaults()));
       call.resolve(defaults);
     } catch (JSONException e) {
-      call.reject("Failed to get defaults: " + e.getMessage());
+      call.reject("Failed to get dynamic defaults: " + e.getMessage());
     }
   }
 

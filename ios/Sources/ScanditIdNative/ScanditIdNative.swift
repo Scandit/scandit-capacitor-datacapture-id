@@ -15,14 +15,14 @@ public class ScanditIdNative: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "ScanditIdNative"
     public let jsName = "ScanditIdNative"
     public let pluginMethods: [CAPPluginMethod] = [
-        CAPPluginMethod(name: "getDefaults", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getDynamicDefaults", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "executeId", returnType: CAPPluginReturnPromise),
     ]
     var idModule: IdCaptureModule!
 
     override public func load() {
         let emitter = CapacitorEventEmitter(with: self)
-        idModule = IdCaptureModule(emitter: emitter)
+        idModule = IdCaptureModule(emitter: RegistryEmitter(platformEmitter: emitter))
         idModule.didStart()
     }
 
@@ -30,9 +30,9 @@ public class ScanditIdNative: CAPPlugin, CAPBridgedPlugin {
         idModule.didStop()
     }
 
-    @objc(getDefaults:)
-    func getDefaults(_ call: CAPPluginCall) {
-        call.resolve(idModule.getDefaults() as PluginCallResultData)
+    @objc(getDynamicDefaults:)
+    func getDynamicDefaults(_ call: CAPPluginCall) {
+        call.resolve(idModule.getDynamicDefaults() as PluginCallResultData)
     }
 
     @objc(executeId:)
