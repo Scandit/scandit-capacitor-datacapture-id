@@ -1,6 +1,6 @@
 {
   "name": "scandit-capacitor-datacapture-id",
-  "version": "8.7.0",
+  "version": "8.7.1",
   "description": "Scandit Data Capture SDK for Capacitor",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -65,7 +65,7 @@
     "@typescript-eslint/eslint-plugin": "5.57.1"
   },
   "dependencies": {
-    "scandit-capacitor-datacapture-core": "8.7.0"
+    "scandit-capacitor-datacapture-core": "8.7.1"
   },
   "packageManager": "pnpm@10.15.0",
   "capacitor": {

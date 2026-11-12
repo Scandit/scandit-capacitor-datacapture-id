@@ -129,4 +129,9 @@ public class ScanditIdNative extends Plugin implements Emitter {
   public boolean hasModeSpecificListenersForEvent(int modeId, @NonNull String eventName) {
     return this.hasListenersForEvent(eventName);
   }
+
+  @Override
+  public boolean hasRegisteredViewListenersForEvent(int viewId, @NonNull String eventName) {
+    return false;
+  }
 }
