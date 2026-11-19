@@ -18,8 +18,6 @@ import com.scandit.capacitor.datacapture.core.utils.CapacitorMethodCall;
 import com.scandit.capacitor.datacapture.core.utils.CapacitorResult;
 import com.scandit.datacapture.frameworks.core.CoreModule;
 import com.scandit.datacapture.frameworks.core.events.Emitter;
-import com.scandit.datacapture.frameworks.core.listeners.registry.ListenerRegistry;
-import com.scandit.datacapture.frameworks.core.listeners.registry.RegistryEmitter;
 import com.scandit.datacapture.frameworks.core.locator.DefaultServiceLocator;
 import com.scandit.datacapture.frameworks.id.IdCaptureModule;
 import java.util.Map;
@@ -36,8 +34,7 @@ public class ScanditIdNative extends Plugin implements Emitter {
   private boolean lastIdCaptureEnabledState = false;
 
   public ScanditIdNative() {
-    this.idCaptureModule =
-        IdCaptureModule.create(new RegistryEmitter(this, ListenerRegistry.getInstance()));
+    this.idCaptureModule = IdCaptureModule.create(this);
     this.serviceLocator = DefaultServiceLocator.getInstance();
   }
 
@@ -96,13 +93,12 @@ public class ScanditIdNative extends Plugin implements Emitter {
   }
 
   @PluginMethod
-  public void getDynamicDefaults(PluginCall call) {
+  public void getDefaults(PluginCall call) {
     try {
-      JSObject defaults =
-          JSObject.fromJSONObject(new JSONObject(idCaptureModule.getDynamicDefaults()));
+      JSObject defaults = JSObject.fromJSONObject(new JSONObject(idCaptureModule.getDefaults()));
       call.resolve(defaults);
     } catch (JSONException e) {
-      call.reject("Failed to get dynamic defaults: " + e.getMessage());
+      call.reject("Failed to get defaults: " + e.getMessage());
     }
   }
 
@@ -128,10 +124,5 @@ public class ScanditIdNative extends Plugin implements Emitter {
   @Override
   public boolean hasModeSpecificListenersForEvent(int modeId, @NonNull String eventName) {
     return this.hasListenersForEvent(eventName);
-  }
-
-  @Override
-  public boolean hasRegisteredViewListenersForEvent(int viewId, @NonNull String eventName) {
-    return false;
   }
 }
