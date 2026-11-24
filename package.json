@@ -1,6 +1,6 @@
 {
   "name": "scandit-capacitor-datacapture-id",
-  "version": "8.6.3",
+  "version": "8.7.2",
   "description": "Scandit Data Capture SDK for Capacitor",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -31,6 +31,7 @@
   ],
   "scripts": {
     "jest": "jest",
+    "test": "jest --coverage --maxWorkers=12 --passWithNoTests",
     "coverage": "jest --coverage --passWithNoTests",
     "lint": "eslint ./src",
     "build": "rollup -c rollup.config.js --bundleConfigAsCjs",
@@ -64,7 +65,7 @@
     "@typescript-eslint/eslint-plugin": "5.57.1"
   },
   "dependencies": {
-    "scandit-capacitor-datacapture-core": "8.6.3"
+    "scandit-capacitor-datacapture-core": "8.7.2"
   },
   "packageManager": "pnpm@10.15.0",
   "capacitor": {
